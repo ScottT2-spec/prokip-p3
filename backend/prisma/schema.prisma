@@ -32,13 +32,15 @@ model User {
   grade        Grade    @default(A)
   departmentId   String?
   department     Department? @relation(fields: [departmentId], references: [id])
-  jiraAccountId  String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
   // Relations
-  pointLogs    PointLog[]    @relation("PointReceiver")
-  pointsGiven  PointLog[]    @relation("PointGiver")
+  pointLogs      PointLog[]      @relation("PointReceiver")
+  pointsGiven    PointLog[]      @relation("PointGiver")
+  tasks          Task[]          @relation("TaskAssignee")
+  tasksAssigned  Task[]          @relation("TaskAssigner")
+  taskActivities TaskActivity[]
 
   @@index([departmentId])
   @@index([grade])
@@ -109,4 +111,45 @@ model RewardThreshold {
   updatedAt   DateTime @updatedAt
 
   @@map("reward_thresholds")
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  IN_REVIEW
+  DONE
+  CLOSED
+}
+
+model Task {
+  id           String     @id @default(uuid())
+  title        String
+  description  String?
+  taskBoardId  String?    // ID from Prokip's task board for linking
+  status       TaskStatus @default(TODO)
+  dueDate      DateTime?
+  userId       String
+  user         User       @relation("TaskAssignee", fields: [userId], references: [id])
+  assignedById String
+  assignedBy   User       @relation("TaskAssigner", fields: [assignedById], references: [id])
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@index([userId, status])
+  @@index([status])
+  @@map("tasks")
+}
+
+model TaskActivity {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  taskId       String
+  taskTitle    String
+  activityType String   @default("status_update") // status_update, comment, attachment, other
+  createdAt    DateTime @default(now())
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([taskId])
+  @@map("task_activities")
 }

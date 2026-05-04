@@ -9,7 +9,7 @@ const policyRoutes = require('./routes/policies');
 const pointRoutes = require('./routes/points');
 const dashboardRoutes = require('./routes/dashboard');
 const slaRoutes = require('./routes/sla');
-const jiraRoutes = require('./routes/jira');
+const taskRoutes = require('./routes/tasks');
 const { startCronJobs } = require('./services/cronService');
 
 const app = express();
@@ -27,7 +27,7 @@ app.use('/api/policies', policyRoutes);
 app.use('/api/points', pointRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/sla', slaRoutes);
-app.use('/api/jira', jiraRoutes);
+app.use('/api/tasks', taskRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
