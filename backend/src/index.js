@@ -8,6 +8,7 @@ const departmentRoutes = require('./routes/departments');
 const policyRoutes = require('./routes/policies');
 const pointRoutes = require('./routes/points');
 const dashboardRoutes = require('./routes/dashboard');
+const slaRoutes = require('./routes/sla');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -23,6 +24,7 @@ app.use('/api/departments', departmentRoutes);
 app.use('/api/policies', policyRoutes);
 app.use('/api/points', pointRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/sla', slaRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
