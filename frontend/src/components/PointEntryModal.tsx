@@ -29,7 +29,7 @@ export default function PointEntryModal({ open, onClose, preSelectedUser, onSucc
     if (open) {
       setLoadingData(true);
       Promise.all([
-        preSelectedUser ? Promise.resolve([]) : api.get("/api/users").then(res => res.data.users),
+        preSelectedUser ? Promise.resolve([]) : api.get("/api/users").then(res => res.data.users.filter((u: User) => u.role !== "ADMIN")),
         api.get("/api/policies").then(res => res.data.policies)
       ]).then(([usersData, policiesData]) => {
         if (!preSelectedUser) setUsers(usersData);

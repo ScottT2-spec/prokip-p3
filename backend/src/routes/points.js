@@ -29,6 +29,11 @@ router.post('/', authenticate, authorize('ADMIN', 'LEAD'), [
       return res.status(404).json({ error: 'User not found.' });
     }
 
+    // Admins cannot receive points — only Leads and Members
+    if (targetUser.role === 'ADMIN') {
+      return res.status(400).json({ error: 'Admins are not part of the points system.' });
+    }
+
     // Leads can only update their own department members
     if (req.user.role === 'LEAD' && targetUser.departmentId !== req.user.departmentId) {
       return res.status(403).json({ error: 'Can only update points for your department members.' });
@@ -44,7 +49,8 @@ router.post('/', authenticate, authorize('ADMIN', 'LEAD'), [
     }
 
     const newTotal = targetUser.points + pointValue;
-    const newGrade = calculateGrade(newTotal);
+    // Admins are not graded — only Leads and Members
+    const newGrade = targetUser.role === 'ADMIN' ? targetUser.grade : calculateGrade(newTotal);
     const previousGrade = targetUser.grade;
 
     // Transaction: create log + update user points

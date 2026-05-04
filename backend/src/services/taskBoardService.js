@@ -41,6 +41,7 @@ async function getGhostingUsers() {
   // Get all users with assigned tasks
   const usersWithTasks = await prisma.user.findMany({
     where: {
+      role: { not: 'ADMIN' }, // Admins are not graded
       tasks: {
         some: {
           status: { notIn: ['DONE', 'CLOSED'] },

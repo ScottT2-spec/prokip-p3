@@ -231,12 +231,20 @@ export default function UsersPage() {
                         </span>
                       </td>
                       <td className="py-3 px-2 text-right">
-                        <span className={`font-semibold ${userData.points >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          {userData.points}
-                        </span>
+                        {userData.role === "ADMIN" ? (
+                          <span className="text-gray-400">—</span>
+                        ) : (
+                          <span className={`font-semibold ${userData.points >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {userData.points}
+                          </span>
+                        )}
                       </td>
                       <td className="py-3 px-2">
-                        <GradeBadge grade={userData.grade} size="sm" />
+                        {userData.role === "ADMIN" ? (
+                          <span className="text-gray-400">—</span>
+                        ) : (
+                          <GradeBadge grade={userData.grade} size="sm" />
+                        )}
                       </td>
                       <td className="py-3 px-2 text-center">
                         <button

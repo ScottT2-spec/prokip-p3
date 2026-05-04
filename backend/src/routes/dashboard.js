@@ -12,7 +12,7 @@ router.get('/admin', authenticate, authorize('ADMIN', 'LEAD'), async (req, res) 
     const pageNum = parseInt(page);
     const limitNum = Math.min(parseInt(limit) || 25, 100); // Cap at 100
 
-    const where = {};
+    const where = { role: { not: 'ADMIN' } }; // Admins are not graded
     if (req.user.role === 'LEAD') {
       where.departmentId = req.user.departmentId;
     }
@@ -53,8 +53,8 @@ router.get('/admin', authenticate, authorize('ADMIN', 'LEAD'), async (req, res) 
 
     // Use DB aggregation for stats instead of loading all users
     const deptFilter = req.user.role === 'LEAD'
-      ? { departmentId: req.user.departmentId }
-      : {};
+      ? { departmentId: req.user.departmentId, role: { not: 'ADMIN' } }
+      : { role: { not: 'ADMIN' } }; // Exclude admins from all grade stats
 
     const [stats, gradeDistribution, atRisk, topPerformers, recentActivity] = await Promise.all([
       // Aggregate stats in DB
