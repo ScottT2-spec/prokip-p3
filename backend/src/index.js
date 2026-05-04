@@ -13,7 +13,7 @@ const taskRoutes = require('./routes/tasks');
 const { startCronJobs } = require('./services/cronService');
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 7860;
 
 // Middleware
 app.use(cors());
