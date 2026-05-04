@@ -84,6 +84,15 @@ export default function PointEntryModal({ open, onClose, preSelectedUser, onSucc
   const handlePolicyChange = (policyId: string) => {
     setSelectedPolicyId(policyId);
     setCustomPoints("");
+    // Auto-fill reason from the selected policy
+    if (policyId) {
+      const policy = policies.find(p => p.id === policyId);
+      if (policy) {
+        setReason(policy.description || policy.name);
+      }
+    } else {
+      setReason("");
+    }
   };
 
   const handleCustomPointsChange = (value: string) => {
