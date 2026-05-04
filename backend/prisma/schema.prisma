@@ -1,0 +1,103 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  LEAD
+  MEMBER
+}
+
+enum Grade {
+  A_PLUS
+  A
+  B
+  C
+  F
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  password     String
+  firstName    String
+  lastName     String
+  role         Role     @default(MEMBER)
+  points       Int      @default(100)
+  grade        Grade    @default(A)
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  pointLogs    PointLog[]    @relation("PointReceiver")
+  pointsGiven  PointLog[]    @relation("PointGiver")
+
+  @@map("users")
+}
+
+model Department {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  users     User[]
+  policies  Policy[]
+
+  @@map("departments")
+}
+
+model Policy {
+  id           String      @id @default(uuid())
+  name         String
+  description  String
+  pointImpact  Int
+  isGlobal     Boolean     @default(true)
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id])
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  // Relations
+  pointLogs    PointLog[]
+
+  @@map("policies")
+}
+
+model PointLog {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation("PointReceiver", fields: [userId], references: [id])
+  givenById  String
+  givenBy    User     @relation("PointGiver", fields: [givenById], references: [id])
+  policyId   String?
+  policy     Policy?  @relation(fields: [policyId], references: [id])
+  points     Int
+  reason     String
+  ticketLink String?
+  createdAt  DateTime @default(now())
+
+  @@map("point_logs")
+}
+
+model RewardThreshold {
+  id          String @id @default(uuid())
+  grade       Grade  @unique
+  minPoints   Int
+  maxPoints   Int?
+  title       String
+  description String
+  consequence String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("reward_thresholds")
+}
