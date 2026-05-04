@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { AdminDashboard, MemberDashboard, User } from "@/lib/types";
+import { AdminDashboard, MemberDashboard, User, Department } from "@/lib/types";
 import api from "@/lib/api";
 import AppShell from "@/components/AppShell";
 import GradeBadge from "@/components/GradeBadge";
@@ -27,11 +27,15 @@ export default function Dashboard() {
   const [searchTerm, setSearchTerm] = useState("");
   const [departmentFilter, setDepartmentFilter] = useState("");
   const [gradeFilter, setGradeFilter] = useState("");
+  const [departments, setDepartments] = useState<Department[]>([]);
   const [page, setPage] = useState(1);
 
   useEffect(() => {
     if (!user) return;
     loadData();
+    if (user.role === "ADMIN" || user.role === "LEAD") {
+      loadDepartments();
+    }
   }, [user, searchTerm, departmentFilter, gradeFilter, page]);
 
   const loadData = async () => {
@@ -68,15 +72,29 @@ export default function Dashboard() {
     setPointEntryOpen(true);
   };
 
+  const loadDepartments = async () => {
+    try {
+      const response = await api.get("/api/departments");
+      setDepartments(response.data.departments || []);
+    } catch (error) {
+      console.error("Failed to load departments");
+    }
+  };
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
+    const diffMinutes = Math.floor(diffMs / (1000 * 60));
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
     const diffDays = Math.floor(diffHours / 24);
 
-    if (diffHours < 24) {
-      return diffHours === 0 ? "Just now" : `${diffHours}h ago`;
+    if (diffMinutes < 1) {
+      return "Just now";
+    } else if (diffMinutes < 60) {
+      return `${diffMinutes}m ago`;
+    } else if (diffHours < 24) {
+      return `${diffHours}h ago`;
     } else if (diffDays < 7) {
       return `${diffDays}d ago`;
     } else {
@@ -192,6 +210,11 @@ export default function Dashboard() {
                   className="input-field"
                 >
                   <option value="">All Departments</option>
+                  {departments.map((dept) => (
+                    <option key={dept.id} value={dept.id}>
+                      {dept.name}
+                    </option>
+                  ))}
                 </select>
                 <select
                   value={gradeFilter}
