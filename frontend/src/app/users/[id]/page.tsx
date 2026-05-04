@@ -30,7 +30,7 @@ export default function UserDetailPage() {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [pointEntryOpen, setPointEntryOpen] = useState(false);
   const [resetPasswordOpen, setResetPasswordOpen] = useState(false);
-  const [tempPassword, setTempPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
   const [editLoading, setEditLoading] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
 
@@ -115,14 +115,16 @@ export default function UserDetailPage() {
     }
   };
 
-  const handleResetPassword = async () => {
-    if (!userData) return;
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!userData || !newPassword || newPassword.length < 6) return;
 
     setResetLoading(true);
     try {
-      const response = await api.put(`/api/auth/reset-password/${userId}`);
-      setTempPassword(response.data.tempPassword);
+      await api.put(`/api/auth/reset-password/${userId}`, { newPassword });
       toast.success("Password reset successfully");
+      setNewPassword("");
+      setResetPasswordOpen(false);
     } catch (error: any) {
       toast.error(error.response?.data?.error || "Failed to reset password");
     } finally {
@@ -449,63 +451,47 @@ export default function UserDetailPage() {
         open={resetPasswordOpen}
         onClose={() => {
           setResetPasswordOpen(false);
-          setTempPassword("");
+          setNewPassword("");
         }}
         title="Reset Password"
         maxWidth="max-w-md"
       >
-        {tempPassword ? (
-          <div className="space-y-4">
-            <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <h4 className="font-semibold text-yellow-800 mb-2">Password Reset</h4>
-              <p className="text-yellow-700 text-sm mb-4">
-                A new temporary password has been generated:
-              </p>
-              <div className="bg-white p-3 rounded border border-yellow-300">
-                <p className="text-sm"><strong>Temporary Password:</strong></p>
-                <code className="text-lg font-mono bg-gray-100 px-2 py-1 rounded">
-                  {tempPassword}
-                </code>
-              </div>
-              <p className="text-yellow-700 text-sm mt-3">
-                The user will need to change this password on their next login.
-              </p>
-            </div>
-            <div className="flex justify-end">
-              <button
-                onClick={() => {
-                  setResetPasswordOpen(false);
-                  setTempPassword("");
-                }}
-                className="btn-primary"
-              >
-                Close
-              </button>
-            </div>
+        <form onSubmit={handleResetPassword} className="space-y-4">
+          <p className="text-gray-600">
+            Set a new password for {userData.firstName} {userData.lastName}.
+          </p>
+          <div>
+            <label className="input-label">New Password *</label>
+            <input
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              placeholder="Enter new password (min 6 characters)"
+              className="input-field"
+              minLength={6}
+              required
+            />
           </div>
-        ) : (
-          <div className="space-y-4">
-            <p className="text-gray-600">
-              Are you sure you want to reset the password for {userData.firstName} {userData.lastName}? 
-              This will generate a new temporary password.
-            </p>
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => setResetPasswordOpen(false)}
-                className="btn-secondary"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleResetPassword}
-                disabled={resetLoading}
-                className="btn-danger"
-              >
-                {resetLoading ? "Resetting..." : "Reset Password"}
-              </button>
-            </div>
+          <div className="flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                setResetPasswordOpen(false);
+                setNewPassword("");
+              }}
+              className="btn-secondary"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={resetLoading || newPassword.length < 6}
+              className="btn-primary"
+            >
+              {resetLoading ? "Resetting..." : "Reset Password"}
+            </button>
           </div>
-        )}
+        </form>
       </Modal>
 
       {/* Point Entry Modal */}

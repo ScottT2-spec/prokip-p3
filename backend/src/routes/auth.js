@@ -91,9 +91,16 @@ router.put('/change-password', authenticate, [
 });
 
 // PUT /api/auth/reset-password/:userId (Admin only)
-router.put('/reset-password/:userId', authenticate, async (req, res) => {
+router.put('/reset-password/:userId', authenticate, [
+  body('newPassword').isLength({ min: 6 }).withMessage('New password must be at least 6 characters'),
+], async (req, res) => {
   if (req.user.role !== 'ADMIN') {
     return res.status(403).json({ error: 'Only admins can reset passwords.' });
+  }
+
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
   }
 
   try {
@@ -102,9 +109,7 @@ router.put('/reset-password/:userId', authenticate, async (req, res) => {
       return res.status(404).json({ error: 'User not found.' });
     }
 
-    // Generate new temporary password
-    const tempPassword = Math.random().toString(36).slice(-8);
-    const hashedPassword = await bcrypt.hash(tempPassword, 10);
+    const hashedPassword = await bcrypt.hash(req.body.newPassword, 10);
 
     await prisma.user.update({
       where: { id: req.params.userId },
@@ -113,7 +118,6 @@ router.put('/reset-password/:userId', authenticate, async (req, res) => {
 
     res.json({
       message: 'Password reset successfully.',
-      tempPassword, // Send to user via email in production
       userId: req.params.userId,
     });
   } catch (error) {
