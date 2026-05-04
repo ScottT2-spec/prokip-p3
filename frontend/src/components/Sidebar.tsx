@@ -22,7 +22,6 @@ const menuItems = [
   { href: "/users", label: "Users", icon: Users, roles: ["ADMIN", "LEAD"] },
   { href: "/policies", label: "Policies", icon: FileText, roles: ["ADMIN", "LEAD"] },
   { href: "/departments", label: "Departments", icon: Building2, roles: ["ADMIN"] },
-  { href: "/tasks", label: "Tasks", icon: ListTodo, roles: ["ADMIN", "LEAD", "MEMBER"] },
 ];
 
 export default function Sidebar() {
