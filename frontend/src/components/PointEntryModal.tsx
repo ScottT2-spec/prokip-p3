@@ -139,7 +139,7 @@ export default function PointEntryModal({ open, onClose, preSelectedUser, onSucc
               onChange={(e) => handlePolicyChange(e.target.value)}
               className="input-field"
             >
-              <option value="">Select a policy (optional)</option>
+              <option value="">Select a policy...</option>
               {policies.map((policy) => (
                 <option key={policy.id} value={policy.id}>
                   {policy.name} ({formatPoints(policy.pointImpact)} points)
@@ -148,27 +148,11 @@ export default function PointEntryModal({ open, onClose, preSelectedUser, onSucc
             </select>
           </div>
 
-          <div>
-            <label className="input-label">Manual Points</label>
-            <input
-              type="number"
-              value={customPoints}
-              onChange={(e) => handleCustomPointsChange(e.target.value)}
-              placeholder="Enter custom point value"
-              className="input-field"
-              disabled={!!selectedPolicyId}
-            />
-            {!selectedPolicyId && customPoints && (
-              <p className={`text-sm mt-2 font-medium ${pointsToApply > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                Will apply {formatPoints(pointsToApply)} points
-              </p>
-            )}
-            {selectedPolicy && (
-              <p className={`text-sm mt-2 font-medium ${selectedPolicy.pointImpact > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                Will apply {formatPoints(selectedPolicy.pointImpact)} points
-              </p>
-            )}
-          </div>
+          {selectedPolicy && (
+            <p className={`text-sm font-medium ${selectedPolicy.pointImpact > 0 ? 'text-green-600' : 'text-red-600'}`}>
+              Will apply {formatPoints(selectedPolicy.pointImpact)} points
+            </p>
+          )}
 
           <div>
             <label className="input-label">Reason *</label>
