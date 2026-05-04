@@ -39,6 +39,11 @@ model User {
   pointLogs    PointLog[]    @relation("PointReceiver")
   pointsGiven  PointLog[]    @relation("PointGiver")
 
+  @@index([departmentId])
+  @@index([grade])
+  @@index([points(sort: Desc)])
+  @@index([firstName, lastName])
+  @@index([departmentId, grade])
   @@map("users")
 }
 
@@ -85,6 +90,9 @@ model PointLog {
   ticketLink String?
   createdAt  DateTime @default(now())
 
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([givenById])
+  @@index([createdAt(sort: Desc)])
   @@map("point_logs")
 }
 
