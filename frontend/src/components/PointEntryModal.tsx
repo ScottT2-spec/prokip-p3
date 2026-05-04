@@ -154,17 +154,16 @@ export default function PointEntryModal({ open, onClose, preSelectedUser, onSucc
             </p>
           )}
 
-          {selectedPolicy && (
-            <div>
-              <label className="input-label">Reason (from policy — editable)</label>
-              <textarea
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-                className="input-field min-h-[100px] resize-none"
-                required
-              />
-            </div>
-          )}
+          <div>
+            <label className="input-label">Reason *</label>
+            <textarea
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="Explain why you're applying these points..."
+              className="input-field min-h-[100px] resize-none"
+              required
+            />
+          </div>
 
           <div className="flex gap-3 pt-4">
             <button
