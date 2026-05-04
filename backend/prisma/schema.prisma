@@ -30,10 +30,11 @@ model User {
   role         Role     @default(MEMBER)
   points       Int      @default(100)
   grade        Grade    @default(A)
-  departmentId String?
-  department   Department? @relation(fields: [departmentId], references: [id])
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  departmentId   String?
+  department     Department? @relation(fields: [departmentId], references: [id])
+  jiraAccountId  String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   // Relations
   pointLogs    PointLog[]    @relation("PointReceiver")

@@ -9,6 +9,8 @@ const policyRoutes = require('./routes/policies');
 const pointRoutes = require('./routes/points');
 const dashboardRoutes = require('./routes/dashboard');
 const slaRoutes = require('./routes/sla');
+const jiraRoutes = require('./routes/jira');
+const { startCronJobs } = require('./services/cronService');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -25,6 +27,7 @@ app.use('/api/policies', policyRoutes);
 app.use('/api/points', pointRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/sla', slaRoutes);
+app.use('/api/jira', jiraRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -33,6 +36,8 @@ app.get('/api/health', (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`P3 API running on port ${PORT}`);
+  // Start automated jobs (Jira ghosting checks, etc.)
+  startCronJobs();
 });
 
 module.exports = app;
