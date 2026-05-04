@@ -172,17 +172,6 @@ export default function PointEntryModal({ open, onClose, preSelectedUser, onSucc
             />
           </div>
 
-          <div>
-            <label className="input-label">Ticket/PR Link (Optional)</label>
-            <input
-              type="url"
-              value={ticketLink}
-              onChange={(e) => setTicketLink(e.target.value)}
-              placeholder="https://..."
-              className="input-field"
-            />
-          </div>
-
           <div className="flex gap-3 pt-4">
             <button
               type="submit"
