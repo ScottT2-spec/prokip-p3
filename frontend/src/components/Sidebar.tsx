@@ -124,9 +124,9 @@ export default function Sidebar() {
       {/* Mobile hamburger */}
       <button
         onClick={() => setMobileOpen(true)}
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-white rounded-lg shadow-card border border-[#E2E8F0]"
+        className="lg:hidden fixed top-4 right-4 z-50 p-2 bg-prokip-navy-dark rounded-lg shadow-card"
       >
-        <Menu size={20} className="text-prokip-navy" />
+        <Menu size={20} className="text-white" />
       </button>
 
       {/* Mobile overlay */}
