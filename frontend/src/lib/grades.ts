@@ -41,6 +41,8 @@ export const GRADE_CONFIG: Record<
   },
 };
 
+export const gradeOrder: Grade[] = ["A_PLUS", "A", "B", "C", "F"];
+
 export function getGradeConfig(grade: Grade) {
   return GRADE_CONFIG[grade] || GRADE_CONFIG.B;
 }

@@ -48,11 +48,11 @@ async function main() {
 
   // Create reward thresholds
   const thresholds = [
-    { grade: 'A_PLUS', minPoints: 105, maxPoints: null, title: 'Platinum', description: 'Elite Performance', consequence: null },
-    { grade: 'A', minPoints: 90, maxPoints: 104, title: 'High Performer', description: 'Standard High Performance', consequence: null },
-    { grade: 'B', minPoints: 75, maxPoints: 89, title: 'Reliable', description: 'Baseline Reliability', consequence: null },
-    { grade: 'C', minPoints: 60, maxPoints: 74, title: 'Warning', description: 'Needs Improvement', consequence: 'Mandatory Estimation Training & peer review' },
-    { grade: 'F', minPoints: 0, maxPoints: 59, title: 'Probation', description: 'Critical Performance', consequence: 'Loss of remote work + Daily EOD micromanagement' },
+    { grade: 'A_PLUS', minPoints: 105, maxPoints: null, title: 'Platinum', description: 'Elite Performance', reward: 'Platinum High-Five email, priority on future projects, quarterly bonus eligible', consequence: null },
+    { grade: 'A', minPoints: 90, maxPoints: 104, title: 'High Performer', description: 'Standard High Performance', reward: 'Eligible for quarterly perks and recognition', consequence: null },
+    { grade: 'B', minPoints: 75, maxPoints: 89, title: 'Reliable', description: 'Baseline Reliability', reward: 'Standard benefits maintained', consequence: null },
+    { grade: 'C', minPoints: 60, maxPoints: 74, title: 'Warning', description: 'Needs Improvement', reward: null, consequence: 'Mandatory Estimation Training & peer review' },
+    { grade: 'F', minPoints: 0, maxPoints: 59, title: 'Probation', description: 'Critical Performance', reward: null, consequence: 'Loss of remote work + Daily EOD micromanagement check-ins' },
   ];
 
   for (const threshold of thresholds) {

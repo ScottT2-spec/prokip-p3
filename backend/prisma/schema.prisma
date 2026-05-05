@@ -57,8 +57,10 @@ model Department {
   updatedAt DateTime @updatedAt
 
   // Relations
-  users     User[]
-  policies  Policy[]
+  users             User[]
+  policies          Policy[]
+  rewardThresholds  RewardThreshold[]
+  quarterSettings   QuarterSettings[]
 
   @@map("departments")
 }
@@ -102,16 +104,34 @@ model PointLog {
 
 model RewardThreshold {
   id          String @id @default(uuid())
-  grade       Grade  @unique
+  grade       Grade
   minPoints   Int
   maxPoints   Int?
   title       String
   description String
+  reward      String?
   consequence String?
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  @@unique([grade, departmentId])
   @@map("reward_thresholds")
+}
+
+model QuarterSettings {
+  id          String   @id @default(uuid())
+  name        String
+  startDate   DateTime
+  endDate     DateTime
+  isActive    Boolean  @default(true)
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("quarter_settings")
 }
 
 enum TaskStatus {

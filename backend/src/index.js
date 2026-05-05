@@ -10,6 +10,7 @@ const policyRoutes = require('./routes/policies');
 const pointRoutes = require('./routes/points');
 const dashboardRoutes = require('./routes/dashboard');
 const slaRoutes = require('./routes/sla');
+const gradeRoutes = require('./routes/grades');
 // Ghosting detection via cronService (connects to external task board)
 const { startCronJobs } = require('./services/cronService');
 
@@ -29,6 +30,7 @@ app.use('/api/policies', policyRoutes);
 app.use('/api/points', pointRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/sla', slaRoutes);
+app.use('/api/grades', gradeRoutes);
 // Task board ghosting integration handled via cronService (no standalone task CRUD)
 
 // Health check
