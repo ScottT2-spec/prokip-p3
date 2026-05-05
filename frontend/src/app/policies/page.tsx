@@ -148,27 +148,25 @@ export default function PoliciesPage() {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-2">
+        <div className="flex gap-1 bg-gray-100 rounded-lg p-1 w-fit">
           <button
             onClick={() => setActiveTab("rewards")}
-            className={`flex items-center gap-2 px-5 py-3 rounded-lg font-medium text-sm transition-all ${
+            className={`px-5 py-2.5 rounded-md font-medium text-sm transition-all ${
               activeTab === "rewards"
-                ? "bg-green-600 text-white shadow-md"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                ? "bg-prokip-navy text-white"
+                : "text-gray-400 hover:text-gray-500"
             }`}
           >
-            <Award className="w-4 h-4" />
             Rewards ({rewardPolicies.length})
           </button>
           <button
             onClick={() => setActiveTab("penalties")}
-            className={`flex items-center gap-2 px-5 py-3 rounded-lg font-medium text-sm transition-all ${
+            className={`px-5 py-2.5 rounded-md font-medium text-sm transition-all ${
               activeTab === "penalties"
-                ? "bg-red-600 text-white shadow-md"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                ? "bg-prokip-navy text-white"
+                : "text-gray-400 hover:text-gray-500"
             }`}
           >
-            <AlertTriangle className="w-4 h-4" />
             Penalties ({penaltyPolicies.length})
           </button>
         </div>
