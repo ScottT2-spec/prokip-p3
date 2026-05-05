@@ -38,8 +38,49 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', service: 'Prokip P3 API' });
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`P3 API running on port ${PORT}`);
+
+  // Auto-migrate: ensure new tables/columns exist
+  try {
+    const prisma = require('./config/db');
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "quarter_settings" (
+        "id" TEXT NOT NULL DEFAULT gen_random_uuid(),
+        "name" TEXT NOT NULL,
+        "startDate" TIMESTAMP(3) NOT NULL,
+        "endDate" TIMESTAMP(3) NOT NULL,
+        "isActive" BOOLEAN NOT NULL DEFAULT true,
+        "departmentId" TEXT,
+        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT "quarter_settings_pkey" PRIMARY KEY ("id"),
+        CONSTRAINT "quarter_settings_departmentId_fkey" FOREIGN KEY ("departmentId") REFERENCES "departments"("id") ON DELETE SET NULL ON UPDATE CASCADE
+      )
+    `);
+
+    // Add missing columns to reward_thresholds
+    await prisma.$executeRawUnsafe(`ALTER TABLE "reward_thresholds" ADD COLUMN IF NOT EXISTS "reward" TEXT`).catch(() => {});
+    await prisma.$executeRawUnsafe(`ALTER TABLE "reward_thresholds" ADD COLUMN IF NOT EXISTS "departmentId" TEXT REFERENCES "departments"("id") ON DELETE SET NULL`).catch(() => {});
+
+    // Drop old unique on grade only, add composite unique (grade + departmentId)
+    await prisma.$executeRawUnsafe(`ALTER TABLE "reward_thresholds" DROP CONSTRAINT IF EXISTS "reward_thresholds_grade_key"`).catch(() => {});
+    await prisma.$executeRawUnsafe(`
+      DO $$ BEGIN
+        IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'reward_thresholds_grade_departmentId_key') THEN
+          ALTER TABLE "reward_thresholds" ADD CONSTRAINT "reward_thresholds_grade_departmentId_key" UNIQUE ("grade", "departmentId");
+        END IF;
+      END $$
+    `).catch(() => {});
+
+    // Add imageUrl to point_logs if missing
+    await prisma.$executeRawUnsafe(`ALTER TABLE "point_logs" ADD COLUMN IF NOT EXISTS "imageUrl" TEXT`).catch(() => {});
+
+    console.log('Schema migration complete');
+  } catch (err) {
+    console.error('Auto-migration error:', err.message);
+  }
+
   // Start automated jobs (Jira ghosting checks, etc.)
   startCronJobs();
 });
