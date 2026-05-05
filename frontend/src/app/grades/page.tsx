@@ -98,7 +98,7 @@ export default function GradesPage() {
       const [defsRes, quartersRes, deptsRes] = await Promise.all([
         api.get("/api/grades/definitions"),
         api.get("/api/grades/quarters"),
-        user?.role === "ADMIN" ? api.get("/api/departments") : Promise.resolve({ data: { departments: [] } }),
+        api.get("/api/departments"),
       ]);
 
       setGlobalDefs(defsRes.data.global || []);
@@ -319,8 +319,8 @@ export default function GradesPage() {
           </div>
         )}
 
-        {/* Department Filter (Admin only) */}
-        {user?.role === "ADMIN" && departments.length > 0 && (
+        {/* Department Filter */}
+        {(user?.role === "ADMIN" || user?.role === "LEAD") && departments.length > 0 && (
           <div className="flex items-center gap-3">
             <label className="text-sm font-medium text-gray-600">View:</label>
             <select
