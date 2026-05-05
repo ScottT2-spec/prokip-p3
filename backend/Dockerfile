@@ -15,4 +15,7 @@ COPY src ./src/
 ENV NODE_ENV=production
 EXPOSE 7860
 
-CMD ["node", "src/index.js"]
+COPY start.sh ./
+RUN chmod +x start.sh
+
+CMD ["./start.sh"]
