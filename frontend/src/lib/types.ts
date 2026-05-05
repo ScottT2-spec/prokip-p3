@@ -38,6 +38,7 @@ export interface PointLog {
   points: number;
   reason: string;
   ticketLink?: string | null;
+  imageUrl?: string | null;
   createdAt: string;
   user?: { firstName: string; lastName: string };
   givenBy?: { firstName: string; lastName: string };

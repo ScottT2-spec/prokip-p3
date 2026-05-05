@@ -91,6 +91,7 @@ model PointLog {
   points     Int
   reason     String
   ticketLink String?
+  imageUrl   String?
   createdAt  DateTime @default(now())
 
   @@index([userId, createdAt(sort: Desc)])

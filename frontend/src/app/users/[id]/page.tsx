@@ -308,6 +308,7 @@ export default function UserDetailPage() {
                   <th className="text-left py-3 px-3 font-semibold text-prokip-navy text-sm">Reason</th>
                   <th className="text-left py-3 px-3 font-semibold text-prokip-navy text-sm">Added By</th>
                   <th className="text-left py-3 px-3 font-semibold text-prokip-navy text-sm">Date</th>
+                  <th className="text-left py-3 px-3 font-semibold text-prokip-navy text-sm">Evidence</th>
                 </tr>
               </thead>
               <tbody>
@@ -350,6 +351,23 @@ export default function UserDetailPage() {
                         hour: "2-digit",
                         minute: "2-digit",
                       })}
+                    </td>
+                    <td className="py-3 px-3">
+                      {log.imageUrl ? (
+                        <a
+                          href={`${process.env.NEXT_PUBLIC_API_URL || ""}${log.imageUrl}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <img
+                            src={`${process.env.NEXT_PUBLIC_API_URL || ""}${log.imageUrl}`}
+                            alt="Evidence"
+                            className="w-10 h-10 rounded-md object-cover border border-gray-200 hover:opacity-80 transition-opacity cursor-pointer"
+                          />
+                        </a>
+                      ) : (
+                        <span className="text-gray-300 text-xs">—</span>
+                      )}
                     </td>
                   </tr>
                 ))}

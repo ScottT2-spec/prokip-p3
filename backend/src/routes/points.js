@@ -4,24 +4,27 @@ const prisma = require('../config/db');
 const { authenticate, authorize } = require('../middleware/auth');
 const { calculateGrade } = require('../utils/gradeCalculator');
 const { sendPointChangeEmail, sendPlatinumHighFive } = require('../services/emailService');
+const upload = require('../middleware/upload');
 
 const router = express.Router();
 
 // POST /api/points - Add/deduct points (Admin/Lead only)
-router.post('/', authenticate, authorize('ADMIN', 'LEAD'), [
-  body('userId').isUUID().withMessage('Valid user ID required'),
-  body('policyId').optional().isUUID(),
-  body('points').isInt().withMessage('Points must be an integer'),
-  body('reason').notEmpty().withMessage('Reason is required'),
-  body('ticketLink').optional().isString(),
-], async (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
-  }
-
+// Accepts multipart/form-data (with optional image) or JSON
+router.post('/', authenticate, authorize('ADMIN', 'LEAD'), upload.single('image'), async (req, res) => {
   try {
     const { userId, policyId, points, reason, ticketLink } = req.body;
+
+    if (!userId || !reason || points === undefined) {
+      return res.status(400).json({ error: 'userId, points, and reason are required.' });
+    }
+
+    const pointsInt = parseInt(points);
+    if (isNaN(pointsInt)) {
+      return res.status(400).json({ error: 'Points must be a number.' });
+    }
+
+    // Build image URL if file was uploaded
+    const imageUrl = req.file ? `/uploads/${req.file.filename}` : null;
 
     // Get target user
     const targetUser = await prisma.user.findUnique({ where: { id: userId } });
@@ -40,7 +43,7 @@ router.post('/', authenticate, authorize('ADMIN', 'LEAD'), [
     }
 
     // If policyId provided, use the policy's point value
-    let pointValue = points;
+    let pointValue = pointsInt;
     if (policyId) {
       const policy = await prisma.policy.findUnique({ where: { id: policyId } });
       if (policy) {
@@ -63,6 +66,7 @@ router.post('/', authenticate, authorize('ADMIN', 'LEAD'), [
           points: pointValue,
           reason,
           ticketLink: ticketLink || null,
+          imageUrl: imageUrl || null,
         },
       }),
       prisma.user.update({
