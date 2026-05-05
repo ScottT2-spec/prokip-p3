@@ -7,7 +7,7 @@ import api from "@/lib/api";
 import AppShell from "@/components/AppShell";
 import Modal from "@/components/Modal";
 import { CardSkeleton } from "@/components/LoadingSkeleton";
-import { Plus, Edit3, Trash2, Award, AlertTriangle } from "lucide-react";
+import { Plus, Edit3, Trash2, Award, AlertTriangle, Upload } from "lucide-react";
 import { formatPoints } from "@/lib/grades";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
@@ -23,6 +23,9 @@ export default function PoliciesPage() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [policyToDelete, setPolicyToDelete] = useState<Policy | null>(null);
   const [submitLoading, setSubmitLoading] = useState(false);
+  const [bulkModalOpen, setBulkModalOpen] = useState(false);
+  const [bulkLoading, setBulkLoading] = useState(false);
+  const [bulkResult, setBulkResult] = useState<{ message: string; errors?: { row: number; error: string }[] } | null>(null);
 
   const [form, setForm] = useState({
     name: "",
@@ -121,6 +124,66 @@ export default function PoliciesPage() {
     });
   };
 
+  const handleBulkUpload = async (file: File) => {
+    setBulkLoading(true);
+    setBulkResult(null);
+
+    try {
+      const text = await file.text();
+      let policies: { name: string; description: string; pointImpact: number }[] = [];
+
+      if (file.name.endsWith('.json')) {
+        const parsed = JSON.parse(text);
+        policies = Array.isArray(parsed) ? parsed : parsed.policies || [];
+      } else {
+        // CSV parsing
+        const lines = text.split('\n').filter(l => l.trim());
+        if (lines.length < 2) {
+          toast.error("CSV must have a header row and at least one data row");
+          setBulkLoading(false);
+          return;
+        }
+
+        const header = lines[0].toLowerCase().split(',').map(h => h.trim());
+        const nameIdx = header.findIndex(h => h === 'name');
+        const descIdx = header.findIndex(h => h === 'description');
+        const pointsIdx = header.findIndex(h => h === 'pointimpact' || h === 'point_impact' || h === 'points');
+
+        if (nameIdx === -1 || descIdx === -1 || pointsIdx === -1) {
+          toast.error("CSV must have columns: name, description, pointImpact");
+          setBulkLoading(false);
+          return;
+        }
+
+        for (let i = 1; i < lines.length; i++) {
+          const cols = lines[i].split(',').map(c => c.trim());
+          if (cols[nameIdx]) {
+            policies.push({
+              name: cols[nameIdx],
+              description: cols[descIdx] || '',
+              pointImpact: parseInt(cols[pointsIdx]) || 0,
+            });
+          }
+        }
+      }
+
+      if (policies.length === 0) {
+        toast.error("No valid policies found in file");
+        setBulkLoading(false);
+        return;
+      }
+
+      const response = await api.post("/api/policies/bulk", { policies });
+      setBulkResult(response.data);
+      toast.success(response.data.message);
+      loadData();
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || "Failed to upload policies");
+    } finally {
+      setBulkLoading(false);
+    }
+  };
+
   const [activeTab, setActiveTab] = useState<"rewards" | "penalties">("rewards");
   const rewardPolicies = policies.filter(p => p.pointImpact > 0);
   const penaltyPolicies = policies.filter(p => p.pointImpact < 0);
@@ -138,13 +201,22 @@ export default function PoliciesPage() {
           <p className="text-gray-600">
             Manage point policies for automated and manual point application.
           </p>
-          <button
-            onClick={() => setModalOpen(true)}
-            className="btn-primary flex items-center gap-2"
-          >
-            <Plus className="w-4 h-4" />
-            Add Policy
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setBulkModalOpen(true)}
+              className="btn-secondary flex items-center gap-2"
+            >
+              <Upload className="w-4 h-4" />
+              Upload
+            </button>
+            <button
+              onClick={() => setModalOpen(true)}
+              className="btn-primary flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              Add Policy
+            </button>
+          </div>
         </div>
 
         {/* Tabs */}
@@ -305,6 +377,109 @@ export default function PoliciesPage() {
             </button>
           </div>
         </form>
+      </Modal>
+
+      {/* Bulk Upload Modal */}
+      <Modal
+        open={bulkModalOpen}
+        onClose={() => {
+          setBulkModalOpen(false);
+          setBulkResult(null);
+        }}
+        title="Upload Policies"
+        maxWidth="max-w-lg"
+      >
+        <div className="space-y-4">
+          {bulkResult ? (
+            <div className="space-y-4">
+              <div className={`p-4 rounded-lg ${bulkResult.errors?.length ? 'bg-yellow-50 border border-yellow-200' : 'bg-green-50 border border-green-200'}`}>
+                <p className={`font-semibold ${bulkResult.errors?.length ? 'text-yellow-800' : 'text-green-800'}`}>
+                  {bulkResult.message}
+                </p>
+                {bulkResult.errors && bulkResult.errors.length > 0 && (
+                  <div className="mt-3 space-y-1">
+                    {bulkResult.errors.map((err, i) => (
+                      <p key={i} className="text-yellow-700 text-sm">
+                        Row {err.row}: {err.error}
+                      </p>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="flex justify-end">
+                <button
+                  onClick={() => {
+                    setBulkModalOpen(false);
+                    setBulkResult(null);
+                  }}
+                  className="btn-primary"
+                >
+                  Done
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <p className="text-gray-600">
+                Upload a CSV or JSON file with multiple policies. 
+              </p>
+
+              <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                <p className="text-sm font-medium text-prokip-navy">CSV format:</p>
+                <code className="block text-xs bg-white p-3 rounded border border-gray-200 text-gray-700">
+                  name,description,pointImpact<br />
+                  Early Delivery,+5 per 24hrs ahead,5<br />
+                  Missed Deadline,Missing agreed deadline,-15
+                </code>
+
+                <p className="text-sm font-medium text-prokip-navy mt-3">JSON format:</p>
+                <code className="block text-xs bg-white p-3 rounded border border-gray-200 text-gray-700">
+                  {'[{"name":"...","description":"...","pointImpact":5}]'}
+                </code>
+              </div>
+
+              <label className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
+                bulkLoading ? 'border-gray-300 bg-gray-50' : 'border-gray-300 hover:border-prokip-navy hover:bg-gray-50'
+              }`}>
+                <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                  {bulkLoading ? (
+                    <p className="text-sm text-gray-500">Uploading...</p>
+                  ) : (
+                    <>
+                      <Upload className="w-8 h-8 text-gray-400 mb-2" />
+                      <p className="text-sm text-gray-500">
+                        Click to upload <span className="font-medium">.csv</span> or <span className="font-medium">.json</span>
+                      </p>
+                    </>
+                  )}
+                </div>
+                <input
+                  type="file"
+                  accept=".csv,.json"
+                  className="hidden"
+                  disabled={bulkLoading}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleBulkUpload(file);
+                    e.target.value = '';
+                  }}
+                />
+              </label>
+
+              <div className="flex justify-end">
+                <button
+                  onClick={() => {
+                    setBulkModalOpen(false);
+                    setBulkResult(null);
+                  }}
+                  className="btn-secondary"
+                >
+                  Cancel
+                </button>
+              </div>
+            </>
+          )}
+        </div>
       </Modal>
 
       {/* Delete Confirmation Modal */}

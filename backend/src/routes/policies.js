@@ -67,6 +67,67 @@ router.post('/', authenticate, authorize('ADMIN', 'LEAD'), [
   }
 });
 
+// POST /api/policies/bulk - Bulk create policies from CSV/JSON (Admin/Lead)
+router.post('/bulk', authenticate, authorize('ADMIN', 'LEAD'), async (req, res) => {
+  try {
+    const { policies } = req.body;
+
+    if (!Array.isArray(policies) || policies.length === 0) {
+      return res.status(400).json({ error: 'Policies array is required.' });
+    }
+
+    if (policies.length > 100) {
+      return res.status(400).json({ error: 'Maximum 100 policies per upload.' });
+    }
+
+    const created = [];
+    const errors = [];
+
+    for (let i = 0; i < policies.length; i++) {
+      const { name, description, pointImpact, departmentId } = policies[i];
+
+      if (!name || !description || pointImpact === undefined || pointImpact === null) {
+        errors.push({ row: i + 1, error: 'Missing required fields (name, description, pointImpact)' });
+        continue;
+      }
+
+      const impact = parseInt(pointImpact);
+      if (isNaN(impact) || impact === 0) {
+        errors.push({ row: i + 1, error: `Invalid pointImpact: ${pointImpact}` });
+        continue;
+      }
+
+      try {
+        const isGlobal = req.user.role === 'ADMIN' && !departmentId;
+        const deptId = req.user.role === 'LEAD' ? req.user.departmentId : departmentId;
+
+        const policy = await prisma.policy.create({
+          data: {
+            name: name.trim(),
+            description: description.trim(),
+            pointImpact: impact,
+            isGlobal,
+            departmentId: deptId || null,
+          },
+        });
+        created.push(policy);
+      } catch (err) {
+        errors.push({ row: i + 1, error: err.message });
+      }
+    }
+
+    res.status(201).json({
+      message: `${created.length} policies created${errors.length ? `, ${errors.length} failed` : ''}.`,
+      created: created.length,
+      failed: errors.length,
+      errors: errors.length > 0 ? errors : undefined,
+    });
+  } catch (error) {
+    console.error('Bulk create policies error:', error);
+    res.status(500).json({ error: 'Server error.' });
+  }
+});
+
 // PUT /api/policies/:id - Update policy (Admin/Lead)
 router.put('/:id', authenticate, authorize('ADMIN', 'LEAD'), async (req, res) => {
   try {
