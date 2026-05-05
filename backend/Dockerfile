@@ -15,4 +15,4 @@ COPY src ./src/
 ENV NODE_ENV=production
 EXPOSE 7860
 
-CMD ["node", "src/index.js"]
+CMD npx prisma db push --accept-data-loss && node src/index.js
