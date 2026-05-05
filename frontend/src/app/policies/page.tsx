@@ -7,7 +7,7 @@ import api from "@/lib/api";
 import AppShell from "@/components/AppShell";
 import Modal from "@/components/Modal";
 import { CardSkeleton } from "@/components/LoadingSkeleton";
-import { Plus, Edit3, Trash2, Award, AlertTriangle, Search } from "lucide-react";
+import { Plus, Edit3, Trash2, Award, AlertTriangle, Search, Upload } from "lucide-react";
 import { formatPoints } from "@/lib/grades";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
@@ -122,6 +122,66 @@ export default function PoliciesPage() {
       pointImpact: "",
       departmentId: ""
     });
+  };
+
+  const handleBulkUpload = async (file: File) => {
+    setBulkLoading(true);
+    setBulkResult(null);
+
+    try {
+      const text = await file.text();
+      let policies: { name: string; description: string; pointImpact: number }[] = [];
+
+      if (file.name.endsWith('.json')) {
+        const parsed = JSON.parse(text);
+        policies = Array.isArray(parsed) ? parsed : parsed.policies || [];
+      } else {
+        // CSV parsing
+        const lines = text.split('\n').filter(l => l.trim());
+        if (lines.length < 2) {
+          toast.error("CSV must have a header row and at least one data row");
+          setBulkLoading(false);
+          return;
+        }
+
+        const header = lines[0].toLowerCase().split(',').map(h => h.trim());
+        const nameIdx = header.findIndex(h => h === 'name');
+        const descIdx = header.findIndex(h => h === 'description');
+        const pointsIdx = header.findIndex(h => h === 'pointimpact' || h === 'point_impact' || h === 'points');
+
+        if (nameIdx === -1 || descIdx === -1 || pointsIdx === -1) {
+          toast.error("CSV must have columns: name, description, pointImpact");
+          setBulkLoading(false);
+          return;
+        }
+
+        for (let i = 1; i < lines.length; i++) {
+          const cols = lines[i].split(',').map(c => c.trim());
+          if (cols[nameIdx]) {
+            policies.push({
+              name: cols[nameIdx],
+              description: cols[descIdx] || '',
+              pointImpact: parseInt(cols[pointsIdx]) || 0,
+            });
+          }
+        }
+      }
+
+      if (policies.length === 0) {
+        toast.error("No valid policies found in file");
+        setBulkLoading(false);
+        return;
+      }
+
+      const response = await api.post("/api/policies/bulk", { policies });
+      setBulkResult(response.data);
+      toast.success(response.data.message);
+      loadData();
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || "Failed to upload policies");
+    } finally {
+      setBulkLoading(false);
+    }
   };
 
   // Search & Filter
