@@ -146,7 +146,7 @@ router.get('/member', authenticate, async (req, res) => {
       include: { department: true },
     });
 
-    const gradeInfo = getGradeInfo(user.grade);
+    const gradeInfo = await getGradeInfo(user.grade, user.departmentId);
 
     // Recent point history
     const recentLogs = await prisma.pointLog.findMany({

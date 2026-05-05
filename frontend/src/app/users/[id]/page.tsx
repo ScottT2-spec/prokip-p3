@@ -187,7 +187,7 @@ export default function UserDetailPage() {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-2">
-            {canUpdatePoints && (
+            {canUpdatePoints && userData.role !== "ADMIN" && (
               <button
                 onClick={() => setPointEntryOpen(true)}
                 className="btn-primary flex items-center gap-2"
@@ -255,49 +255,53 @@ export default function UserDetailPage() {
             </div>
           </div>
 
-          <div className="card text-center">
-            <h3 className="font-semibold text-prokip-navy mb-4">Current Performance</h3>
-            <div className="space-y-4">
-              <div>
-                <p className="section-label">Points</p>
-                <p className={`text-3xl font-bold ${userData.points >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {userData.points}
-                </p>
-              </div>
-              <div>
-                <p className="section-label">Grade</p>
-                <div className="flex justify-center">
-                  <GradeBadge grade={userData.grade} size="lg" />
+          {userData.role !== "ADMIN" && (
+            <div className="card text-center">
+              <h3 className="font-semibold text-prokip-navy mb-4">Current Performance</h3>
+              <div className="space-y-4">
+                <div>
+                  <p className="section-label">Points</p>
+                  <p className={`text-3xl font-bold ${userData.points >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {userData.points}
+                  </p>
+                </div>
+                <div>
+                  <p className="section-label">Grade</p>
+                  <div className="flex justify-center">
+                    <GradeBadge grade={userData.grade} size="lg" />
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          )}
 
-          <div className="card">
-            <h3 className="font-semibold text-prokip-navy mb-4">Quick Stats</h3>
-            <div className="space-y-4">
-              <div>
-                <p className="section-label">Total Point Entries</p>
-                <p className="text-prokip-navy font-semibold">{userData.pointLogs?.length || 0}</p>
-              </div>
-              <div>
-                <p className="section-label">Positive Points</p>
-                <p className="text-green-600 font-semibold">
-                  +{userData.pointLogs?.filter(log => log.points > 0).reduce((sum, log) => sum + log.points, 0) || 0}
-                </p>
-              </div>
-              <div>
-                <p className="section-label">Negative Points</p>
-                <p className="text-red-600 font-semibold">
-                  {userData.pointLogs?.filter(log => log.points < 0).reduce((sum, log) => sum + log.points, 0) || 0}
-                </p>
+          {userData.role !== "ADMIN" && (
+            <div className="card">
+              <h3 className="font-semibold text-prokip-navy mb-4">Quick Stats</h3>
+              <div className="space-y-4">
+                <div>
+                  <p className="section-label">Total Point Entries</p>
+                  <p className="text-prokip-navy font-semibold">{userData.pointLogs?.length || 0}</p>
+                </div>
+                <div>
+                  <p className="section-label">Positive Points</p>
+                  <p className="text-green-600 font-semibold">
+                    +{userData.pointLogs?.filter(log => log.points > 0).reduce((sum, log) => sum + log.points, 0) || 0}
+                  </p>
+                </div>
+                <div>
+                  <p className="section-label">Negative Points</p>
+                  <p className="text-red-600 font-semibold">
+                    {userData.pointLogs?.filter(log => log.points < 0).reduce((sum, log) => sum + log.points, 0) || 0}
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
 
-        {/* Point History */}
-        <div className="card">
+        {/* Point History — hidden for Admin users */}
+        {userData.role !== "ADMIN" && <div className="card">
           <h3 className="text-lg font-semibold text-prokip-navy mb-6">Point History</h3>
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -379,7 +383,7 @@ export default function UserDetailPage() {
               </div>
             )}
           </div>
-        </div>
+        </div>}
       </div>
 
       {/* Edit User Modal */}
