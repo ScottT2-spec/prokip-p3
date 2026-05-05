@@ -121,8 +121,10 @@ export default function PoliciesPage() {
     });
   };
 
+  const [activeTab, setActiveTab] = useState<"rewards" | "penalties">("rewards");
   const rewardPolicies = policies.filter(p => p.pointImpact > 0);
   const penaltyPolicies = policies.filter(p => p.pointImpact < 0);
+  const activePolicies = activeTab === "rewards" ? rewardPolicies : penaltyPolicies;
 
   if (!user || (user.role !== "ADMIN" && user.role !== "LEAD")) {
     return null;
@@ -130,7 +132,7 @@ export default function PoliciesPage() {
 
   return (
     <AppShell title="Policies">
-      <div className="space-y-8">
+      <div className="space-y-6">
         {/* Header */}
         <div className="flex justify-between items-center">
           <p className="text-gray-600">
@@ -145,128 +147,81 @@ export default function PoliciesPage() {
           </button>
         </div>
 
+        {/* Tabs */}
+        <div className="flex gap-2">
+          <button
+            onClick={() => setActiveTab("rewards")}
+            className={`flex items-center gap-2 px-5 py-3 rounded-lg font-medium text-sm transition-all ${
+              activeTab === "rewards"
+                ? "bg-green-600 text-white shadow-md"
+                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+            }`}
+          >
+            <Award className="w-4 h-4" />
+            Rewards ({rewardPolicies.length})
+          </button>
+          <button
+            onClick={() => setActiveTab("penalties")}
+            className={`flex items-center gap-2 px-5 py-3 rounded-lg font-medium text-sm transition-all ${
+              activeTab === "penalties"
+                ? "bg-red-600 text-white shadow-md"
+                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+            }`}
+          >
+            <AlertTriangle className="w-4 h-4" />
+            Penalties ({penaltyPolicies.length})
+          </button>
+        </div>
+
         {loading ? (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {[1, 2, 3, 4].map(i => <CardSkeleton key={i} />)}
           </div>
         ) : (
-          <>
-            {/* Point Additions (Rewards) */}
-            <div>
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <Award className="w-5 h-5 text-green-600" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-semibold text-prokip-navy">Point Additions (Rewards)</h2>
-                  <p className="text-gray-600 text-sm">Policies that add points to users</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {rewardPolicies.map((policy) => (
-                  <div key={policy.id} className="card">
-                    <div className="flex justify-between items-start mb-4">
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-prokip-navy mb-1">{policy.name}</h3>
-                        <p className="text-gray-600 text-sm mb-3">{policy.description}</p>
-                        <div className="flex items-center gap-4 text-sm">
-                          <span className="text-green-600 font-semibold">
-                            {formatPoints(policy.pointImpact)} points
-                          </span>
-                          <span className="text-gray-500">
-                            {policy.isGlobal ? "Global" : policy.department?.name || "Department"}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleEdit(policy)}
-                          className="p-2 text-gray-400 hover:text-prokip-navy rounded-lg hover:bg-gray-100 transition-colors"
-                        >
-                          <Edit3 className="w-4 h-4" />
-                        </button>
-                        {user.role === "ADMIN" && (
-                          <button
-                            onClick={() => {
-                              setPolicyToDelete(policy);
-                              setDeleteModalOpen(true);
-                            }}
-                            className="p-2 text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        )}
-                      </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {activePolicies.map((policy) => (
+              <div key={policy.id} className="card">
+                <div className="flex justify-between items-start mb-4">
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-prokip-navy mb-1">{policy.name}</h3>
+                    <p className="text-gray-600 text-sm mb-3">{policy.description}</p>
+                    <div className="flex items-center gap-4 text-sm">
+                      <span className={`font-semibold ${policy.pointImpact > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {formatPoints(policy.pointImpact)} points
+                      </span>
+                      <span className="text-gray-500">
+                        {policy.isGlobal ? "Global" : policy.department?.name || "Department"}
+                      </span>
                     </div>
                   </div>
-                ))}
-                {rewardPolicies.length === 0 && (
-                  <div className="lg:col-span-2 text-center py-8 text-gray-500">
-                    No reward policies defined
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleEdit(policy)}
+                      className="p-2 text-gray-400 hover:text-prokip-navy rounded-lg hover:bg-gray-100 transition-colors"
+                    >
+                      <Edit3 className="w-4 h-4" />
+                    </button>
+                    {user.role === "ADMIN" && (
+                      <button
+                        onClick={() => {
+                          setPolicyToDelete(policy);
+                          setDeleteModalOpen(true);
+                        }}
+                        className="p-2 text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
-                )}
-              </div>
-            </div>
-
-            {/* Point Deductions (Penalties) */}
-            <div>
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 bg-red-100 rounded-lg">
-                  <AlertTriangle className="w-5 h-5 text-red-600" />
                 </div>
-                <div>
-                  <h2 className="text-lg font-semibold text-prokip-navy">Point Deductions (Penalties)</h2>
-                  <p className="text-gray-600 text-sm">Policies that deduct points from users</p>
-                </div>
               </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {penaltyPolicies.map((policy) => (
-                  <div key={policy.id} className="card">
-                    <div className="flex justify-between items-start mb-4">
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-prokip-navy mb-1">{policy.name}</h3>
-                        <p className="text-gray-600 text-sm mb-3">{policy.description}</p>
-                        <div className="flex items-center gap-4 text-sm">
-                          <span className="text-red-600 font-semibold">
-                            {formatPoints(policy.pointImpact)} points
-                          </span>
-                          <span className="text-gray-500">
-                            {policy.isGlobal ? "Global" : policy.department?.name || "Department"}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleEdit(policy)}
-                          className="p-2 text-gray-400 hover:text-prokip-navy rounded-lg hover:bg-gray-100 transition-colors"
-                        >
-                          <Edit3 className="w-4 h-4" />
-                        </button>
-                        {user.role === "ADMIN" && (
-                          <button
-                            onClick={() => {
-                              setPolicyToDelete(policy);
-                              setDeleteModalOpen(true);
-                            }}
-                            className="p-2 text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                {penaltyPolicies.length === 0 && (
-                  <div className="lg:col-span-2 text-center py-8 text-gray-500">
-                    No penalty policies defined
-                  </div>
-                )}
+            ))}
+            {activePolicies.length === 0 && (
+              <div className="lg:col-span-2 text-center py-8 text-gray-500">
+                No {activeTab === "rewards" ? "reward" : "penalty"} policies defined
               </div>
-            </div>
-          </>
+            )}
+          </div>
         )}
       </div>
 
