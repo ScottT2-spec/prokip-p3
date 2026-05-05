@@ -7,7 +7,7 @@ import api from "@/lib/api";
 import AppShell from "@/components/AppShell";
 import Modal from "@/components/Modal";
 import { CardSkeleton } from "@/components/LoadingSkeleton";
-import { Plus, Edit3, Trash2, Award, AlertTriangle } from "lucide-react";
+import { Plus, Edit3, Trash2, Award, AlertTriangle, Search } from "lucide-react";
 import { formatPoints } from "@/lib/grades";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
@@ -121,9 +121,23 @@ export default function PoliciesPage() {
     });
   };
 
+  // Search & Filter
+  const [searchTerm, setSearchTerm] = useState("");
+  const [deptFilter, setDeptFilter] = useState("");
+
   const [activeTab, setActiveTab] = useState<"rewards" | "penalties">("rewards");
-  const rewardPolicies = policies.filter(p => p.pointImpact > 0);
-  const penaltyPolicies = policies.filter(p => p.pointImpact < 0);
+
+  const filtered = policies.filter(p => {
+    const matchesSearch = !searchTerm || 
+      p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      p.description.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesDept = !deptFilter || 
+      (deptFilter === "global" ? p.isGlobal : p.departmentId === deptFilter);
+    return matchesSearch && matchesDept;
+  });
+
+  const rewardPolicies = filtered.filter(p => p.pointImpact > 0);
+  const penaltyPolicies = filtered.filter(p => p.pointImpact < 0);
   const activePolicies = activeTab === "rewards" ? rewardPolicies : penaltyPolicies;
 
   if (!user || (user.role !== "ADMIN" && user.role !== "LEAD")) {
@@ -134,7 +148,7 @@ export default function PoliciesPage() {
     <AppShell title="Policies">
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
           <p className="text-gray-600">
             Manage point policies for automated and manual point application.
           </p>
@@ -145,6 +159,33 @@ export default function PoliciesPage() {
             <Plus className="w-4 h-4" />
             Add Policy
           </button>
+        </div>
+
+        {/* Search & Filter */}
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <input
+              type="text"
+              placeholder="Search policies..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="input-field pl-10 w-full"
+            />
+          </div>
+          <select
+            value={deptFilter}
+            onChange={(e) => setDeptFilter(e.target.value)}
+            className="input-field min-w-[180px]"
+          >
+            <option value="">All Scopes</option>
+            <option value="global">Global Only</option>
+            {departments.map((dept) => (
+              <option key={dept.id} value={dept.id}>
+                {dept.name}
+              </option>
+            ))}
+          </select>
         </div>
 
         {/* Tabs */}
