@@ -26,6 +26,36 @@ async function main() {
     },
   });
 
+  // Create lead user
+  const leadPassword = await bcrypt.hash('lead123', 10);
+  await prisma.user.create({
+    data: {
+      email: 'lead@prokip.africa',
+      password: leadPassword,
+      firstName: 'Team',
+      lastName: 'Lead',
+      role: 'LEAD',
+      points: 100,
+      grade: 'A',
+      departmentId: product.id,
+    },
+  });
+
+  // Create member user
+  const memberPassword = await bcrypt.hash('user123', 10);
+  await prisma.user.create({
+    data: {
+      email: 'user@prokip.africa',
+      password: memberPassword,
+      firstName: 'Test',
+      lastName: 'Member',
+      role: 'MEMBER',
+      points: 100,
+      grade: 'A',
+      departmentId: sales.id,
+    },
+  });
+
   // Create default policies
   const policies = [
     { name: 'Early Delivery', description: '+5 per 24 hours ahead of schedule', pointImpact: 5, isGlobal: true },
