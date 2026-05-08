@@ -29,7 +29,7 @@ const menuItems = [
   { href: "/departments", label: "Departments", icon: Building2, roles: ["ADMIN"] },
   { href: "/grades", label: "Grades", icon: Trophy, roles: ["ADMIN", "LEAD", "MEMBER"] },
   { href: "/rewards", label: "Policies & Rewards", icon: Gift, roles: ["ADMIN", "LEAD"] },
-  { href: "/history", label: "History", icon: History, roles: ["ADMIN", "LEAD", "MEMBER"] },
+  { href: "/history", label: "History", icon: History, roles: ["MEMBER"] },
   { href: "/leaderboard", label: "Leaderboard", icon: Medal, roles: ["ADMIN", "LEAD", "MEMBER"] },
   { href: "/bulk-upload", label: "Bulk Upload", icon: Upload, roles: ["ADMIN", "LEAD"] },
 ];
