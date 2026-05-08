@@ -32,6 +32,7 @@ export default function Dashboard() {
 
   // Member dashboard tabs
   const [memberTab, setMemberTab] = useState<"overview" | "policies">("overview");
+  const [policyLimit, setPolicyLimit] = useState(5);
   const [leaderboardData, setLeaderboardData] = useState<User[]>([]);
   const [memberRewardPolicies, setMemberRewardPolicies] = useState<RewardPolicy[]>([]);
 
@@ -723,7 +724,7 @@ export default function Dashboard() {
                       </tr>
                     </thead>
                     <tbody>
-                      {memberData.policies.map((policy) => (
+                      {memberData.policies.slice(0, policyLimit).map((policy) => (
                         <tr key={policy.id} className="border-b border-gray-100 hover:bg-gray-50">
                           <td className="py-3 px-2 text-sm font-medium text-prokip-navy">{policy.name}</td>
                           <td className="py-3 px-2 text-sm text-gray-600 max-w-[300px]">{policy.description}</td>
@@ -736,6 +737,14 @@ export default function Dashboard() {
                       ))}
                     </tbody>
                   </table>
+                  {memberData.policies.length > policyLimit && (
+                    <button
+                      onClick={() => setPolicyLimit(prev => prev + 5)}
+                      className="mt-3 w-full py-2 text-sm font-medium text-prokip-navy hover:bg-gray-50 rounded-lg transition-colors"
+                    >
+                      Load More ({memberData.policies.length - policyLimit} remaining)
+                    </button>
+                  )}
                 </div>
               ) : (
                 <p className="text-gray-500 text-center py-6">No policies configured</p>
