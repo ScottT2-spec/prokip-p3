@@ -2,14 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { AdminDashboard, MemberDashboard, User, Department } from "@/lib/types";
+import { AdminDashboard, MemberDashboard, EnhancedMemberDashboard, User, Department, PointLog, Policy, RewardThreshold } from "@/lib/types";
 import api from "@/lib/api";
 import AppShell from "@/components/AppShell";
 import GradeBadge from "@/components/GradeBadge";
 import { PageSkeleton, CardSkeleton } from "@/components/LoadingSkeleton";
 import PointEntryModal from "@/components/PointEntryModal";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, AreaChart, Area, CartesianGrid, Tooltip } from "recharts";
-import { Users, TrendingUp, AlertTriangle, Award, Search, Filter, Plus, Clock } from "lucide-react";
+import { Users, TrendingUp, AlertTriangle, Award, Search, Filter, Plus, Clock, Star, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, BookOpen, Shield, Target } from "lucide-react";
 import { formatPoints, getGradeConfig } from "@/lib/grades";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
@@ -18,7 +18,7 @@ export default function Dashboard() {
   const { user } = useAuth();
   const router = useRouter();
   const [adminData, setAdminData] = useState<AdminDashboard | null>(null);
-  const [memberData, setMemberData] = useState<MemberDashboard | null>(null);
+  const [memberData, setMemberData] = useState<EnhancedMemberDashboard | null>(null);
   const [loading, setLoading] = useState(true);
   const [pointEntryOpen, setPointEntryOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -30,6 +30,12 @@ export default function Dashboard() {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [page, setPage] = useState(1);
 
+  // Member dashboard tabs & ledger state
+  const [memberTab, setMemberTab] = useState<"overview" | "ledger" | "policies">("overview");
+  const [ledgerData, setLedgerData] = useState<{ logs: PointLog[]; total: number }>({ logs: [], total: 0 });
+  const [ledgerPage, setLedgerPage] = useState(1);
+  const [ledgerLoading, setLedgerLoading] = useState(false);
+
   useEffect(() => {
     if (!user) return;
     loadData();
@@ -37,6 +43,26 @@ export default function Dashboard() {
       loadDepartments();
     }
   }, [user, searchTerm, departmentFilter, gradeFilter, page]);
+
+  // Load ledger data when tab switches to ledger
+  useEffect(() => {
+    if (memberTab === "ledger" && user && user.role !== "ADMIN" && user.role !== "LEAD") {
+      loadLedger();
+    }
+  }, [memberTab, ledgerPage, user]);
+
+  const loadLedger = async () => {
+    if (!user) return;
+    setLedgerLoading(true);
+    try {
+      const response = await api.get(`/api/points/history/${user.id}?page=${ledgerPage}&limit=20`);
+      setLedgerData(response.data);
+    } catch (error) {
+      toast.error("Failed to load ledger");
+    } finally {
+      setLedgerLoading(false);
+    }
+  };
 
   const loadData = async () => {
     if (!user) return;
@@ -368,17 +394,9 @@ export default function Dashboard() {
 
           {/* Recent Activity */}
           <div className="card">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-prokip-navy">Recent Activity</h3>
-              <button
-                onClick={() => router.push("/history")}
-                className="text-sm text-prokip-navy hover:underline font-medium"
-              >
-                See Full History →
-              </button>
-            </div>
+            <h3 className="text-lg font-semibold text-prokip-navy mb-4">Recent Activity</h3>
             <div className="space-y-3">
-              {adminData.recentActivity.slice(0, 5).map((activity) => (
+              {adminData.recentActivity.slice(0, 10).map((activity) => (
                 <div key={activity.id} className="flex items-center gap-4 p-3 border border-gray-100 rounded-lg">
                   <div className="flex-shrink-0">
                     <Clock className="w-5 h-5 text-gray-400" />
@@ -432,122 +450,398 @@ export default function Dashboard() {
     points: item.points
   }));
 
+  // Calculate progress percentage toward next grade
+  const gradeThresholds = [
+    { grade: "F", minPoints: 0 },
+    { grade: "C", minPoints: 60 },
+    { grade: "B", minPoints: 75 },
+    { grade: "A", minPoints: 90 },
+    { grade: "A_PLUS", minPoints: 105 },
+  ];
+  const currentGradeIdx = gradeThresholds.findIndex(g => g.grade === memberData.grade);
+  const currentThreshold = gradeThresholds[currentGradeIdx]?.minPoints || 0;
+  const nextThreshold = memberData.nextGradeInfo?.minPoints || currentThreshold;
+  const progressRange = nextThreshold - currentThreshold;
+  const progressValue = progressRange > 0
+    ? Math.min(100, Math.max(0, ((memberData.points - currentThreshold) / progressRange) * 100))
+    : 100;
+
+  const memberTabs = [
+    { key: "overview" as const, label: "Overview", icon: Target },
+    { key: "ledger" as const, label: "Ledger", icon: BookOpen },
+    { key: "policies" as const, label: "Policies & Rewards", icon: Shield },
+  ];
+
   return (
     <AppShell title="My Dashboard">
-      <div className="space-y-8">
-        {/* Personal Overview */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 card">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-6">
-              <div>
-                <h2 className="text-xl font-bold text-prokip-navy mb-2">
-                  Welcome back, {user?.firstName}!
-                </h2>
-                <p className="text-gray-600">{memberData.status}</p>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="text-center">
-                  <p className="section-label">Current Points</p>
-                  <p className="text-3xl font-bold text-prokip-navy">{memberData.points}</p>
-                </div>
-                <GradeBadge grade={memberData.grade} size="lg" />
-              </div>
-            </div>
-
-            {/* Grade Info */}
-            <div className={`p-4 rounded-lg border-l-4 ${
-              memberData.gradeInfo.consequence 
-                ? 'bg-red-50 border-red-400' 
-                : 'bg-green-50 border-green-400'
-            }`}>
-              <h4 className="font-semibold text-prokip-navy mb-2">
-                {memberData.gradeInfo.label} Grade Status
-              </h4>
-              <p className="text-gray-700">
-                {memberData.gradeInfo.reward || memberData.gradeInfo.consequence}
-              </p>
-            </div>
-          </div>
-
-          <div className="card text-center">
-            <p className="section-label">Department Rank</p>
-            <p className="text-3xl font-bold text-prokip-navy mb-2">
-              {memberData.rank ? `#${memberData.rank}` : "Unranked"}
-            </p>
-            <p className="text-gray-600">
-              in {memberData.department?.name || "No Department"}
-            </p>
-          </div>
+      <div className="space-y-6">
+        {/* Welcome */}
+        <div>
+          <h2 className="text-xl font-bold text-prokip-navy">
+            Welcome back, {user?.firstName}!
+          </h2>
+          <p className="text-gray-600">{memberData.status}</p>
         </div>
 
-        {/* Points Trend Chart */}
-        <div className="card">
-          <h3 className="text-lg font-semibold text-prokip-navy mb-6">Points Trend (Last 30 Days)</h3>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={pointsTrendData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
-                <YAxis />
-                <Tooltip />
-                <Area 
-                  type="monotone" 
-                  dataKey="points" 
-                  stroke="#1E293B" 
-                  fill="#1E293B" 
-                  fillOpacity={0.1}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Recent Point History */}
-        <div className="card">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-prokip-navy">Recent Point History</h3>
+        {/* Tabs */}
+        <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
+          {memberTabs.map((tab) => (
             <button
-              onClick={() => router.push("/history")}
-              className="text-sm text-prokip-navy hover:underline font-medium"
+              key={tab.key}
+              onClick={() => setMemberTab(tab.key)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors flex-1 justify-center ${
+                memberTab === tab.key
+                  ? "bg-white text-prokip-navy shadow-sm"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
             >
-              See Full History →
+              <tab.icon className="w-4 h-4" />
+              {tab.label}
             </button>
-          </div>
-          <div className="space-y-3">
-            {memberData.recentLogs.map((log) => (
-              <div key={log.id} className="flex items-center justify-between p-4 border border-gray-100 rounded-lg">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-1">
-                    <span className={`font-semibold text-lg ${log.points > 0 ? 'text-green-600' : 'text-red-600'}`}>
+          ))}
+        </div>
+
+        {/* ========== OVERVIEW TAB ========== */}
+        {memberTab === "overview" && (
+          <div className="space-y-6">
+            {/* Section A: KPI Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Current Grade */}
+              <div className="card flex flex-col items-center justify-center py-6">
+                <GradeBadge grade={memberData.grade} size="lg" />
+                <p className="mt-3 font-semibold text-prokip-navy text-lg">{memberData.gradeInfo.label} Grade</p>
+                <p className="text-gray-500 text-sm">
+                  {memberData.rank ? `#${memberData.rank} in ${memberData.department?.name || "Dept"}` : "Unranked"}
+                </p>
+              </div>
+
+              {/* Net Point Balance */}
+              <div className="card">
+                <p className="section-label mb-1">Net Balance</p>
+                <p className={`text-3xl font-bold ${memberData.points >= 0 ? "text-prokip-navy" : "text-red-600"}`}>
+                  {memberData.points}
+                </p>
+                {memberData.nextGradeInfo && (
+                  <div className="mt-3">
+                    <div className="flex justify-between text-xs text-gray-500 mb-1">
+                      <span>{memberData.gradeInfo.label}</span>
+                      <span>{memberData.nextGradeInfo.label}</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div
+                        className="h-2 rounded-full transition-all"
+                        style={{ width: `${progressValue}%`, backgroundColor: "#F5B731" }}
+                      />
+                    </div>
+                  </div>
+                )}
+                {!memberData.nextGradeInfo && (
+                  <p className="text-xs text-green-600 mt-2 font-medium">🏆 Max grade reached!</p>
+                )}
+              </div>
+
+              {/* Reward Points */}
+              <div className="card">
+                <div className="flex items-center gap-2 mb-1">
+                  <Star className="w-4 h-4" style={{ color: "#F5B731" }} />
+                  <p className="section-label">Reward Points</p>
+                </div>
+                <p className="text-3xl font-bold" style={{ color: "#F5B731" }}>
+                  +{memberData.rewardPoints}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">Total points earned</p>
+              </div>
+
+              {/* Total Added vs Deducted */}
+              <div className="card">
+                <p className="section-label mb-2">Added vs Deducted</p>
+                <div className="flex items-end gap-4">
+                  <div>
+                    <div className="flex items-center gap-1">
+                      <ArrowUp className="w-4 h-4 text-green-600" />
+                      <span className="text-green-600 text-xl font-bold">+{memberData.totalAdded}</span>
+                    </div>
+                    <p className="text-xs text-gray-500">Added</p>
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-1">
+                      <ArrowDown className="w-4 h-4 text-red-600" />
+                      <span className="text-red-600 text-xl font-bold">-{memberData.totalDeducted}</span>
+                    </div>
+                    <p className="text-xs text-gray-500">Deducted</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Section B: Progress to Next Grade */}
+            {memberData.nextGradeInfo && (
+              <div className="card">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-lg font-semibold text-prokip-navy">Progress to Next Grade</h3>
+                  <span className="text-sm text-gray-500">
+                    {memberData.points} / {memberData.nextGradeInfo.minPoints} pts
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-4 mb-2">
+                  <div
+                    className="h-4 rounded-full transition-all flex items-center justify-end pr-2"
+                    style={{ width: `${Math.max(progressValue, 5)}%`, backgroundColor: "#F5B731" }}
+                  >
+                    {progressValue > 15 && (
+                      <span className="text-xs font-bold text-prokip-navy-dark">{Math.round(progressValue)}%</span>
+                    )}
+                  </div>
+                </div>
+                <p className="text-sm text-gray-600">
+                  <span className="font-semibold" style={{ color: "#F5B731" }}>{memberData.nextGradeInfo.pointsNeeded}</span>
+                  {" "}more points to reach{" "}
+                  <span className="font-semibold text-prokip-navy">{memberData.nextGradeInfo.label} Grade</span>
+                </p>
+              </div>
+            )}
+
+            {/* Points Trend Chart */}
+            {pointsTrendData.length > 0 && (
+              <div className="card">
+                <h3 className="text-lg font-semibold text-prokip-navy mb-6">Points Trend (Last 30 Days)</h3>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={pointsTrendData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="date" />
+                      <YAxis />
+                      <Tooltip />
+                      <Area
+                        type="monotone"
+                        dataKey="points"
+                        stroke="#1E293B"
+                        fill="#1E293B"
+                        fillOpacity={0.1}
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            )}
+
+            {/* Section C: Recent Activity Mini-Feed */}
+            <div className="card">
+              <h3 className="text-lg font-semibold text-prokip-navy mb-4">Recent Activity</h3>
+              <div className="space-y-2">
+                {memberData.recentLogs.slice(0, 5).map((log) => (
+                  <div key={log.id} className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors">
+                    <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${log.points > 0 ? "bg-green-500" : "bg-red-500"}`} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-prokip-navy truncate">{log.reason}</p>
+                      {log.policy && (
+                        <p className="text-xs text-gray-400">{log.policy.name}</p>
+                      )}
+                    </div>
+                    <span className={`font-semibold text-sm flex-shrink-0 ${log.points > 0 ? "text-green-600" : "text-red-600"}`}>
                       {formatPoints(log.points)}
                     </span>
-                    <span className="text-gray-500">•</span>
-                    <span className="text-prokip-navy font-medium">{log.reason}</span>
+                    <span className="text-xs text-gray-400 flex-shrink-0 w-16 text-right">{formatDate(log.createdAt)}</span>
                   </div>
-                  {log.policy && (
-                    <p className="text-gray-600 text-sm">Policy: {log.policy.name}</p>
-                  )}
-                  {log.ticketLink && (
-                    <a 
-                      href={log.ticketLink} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-prokip-navy hover:underline text-sm"
-                    >
-                      View Ticket →
-                    </a>
-                  )}
-                </div>
-                <div className="text-right text-gray-500 text-sm">
-                  {formatDate(log.createdAt)}
-                </div>
+                ))}
+                {memberData.recentLogs.length === 0 && (
+                  <p className="text-gray-500 text-center py-6">No activity yet</p>
+                )}
               </div>
-            ))}
-            {memberData.recentLogs.length === 0 && (
-              <p className="text-gray-500 text-center py-8">No point history yet</p>
-            )}
+              {memberData.recentLogs.length > 0 && (
+                <button
+                  onClick={() => setMemberTab("ledger")}
+                  className="mt-4 text-sm font-medium text-prokip-navy hover:underline"
+                >
+                  View Full Ledger →
+                </button>
+              )}
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* ========== LEDGER TAB ========== */}
+        {memberTab === "ledger" && (
+          <div className="space-y-6">
+            {/* Summary Row */}
+            <div className="flex gap-4">
+              <div className="card flex-1 text-center">
+                <p className="text-sm text-gray-500">Total Earned</p>
+                <p className="text-2xl font-bold text-green-600">+{memberData.totalAdded}</p>
+              </div>
+              <div className="card flex-1 text-center">
+                <p className="text-sm text-gray-500">Total Deducted</p>
+                <p className="text-2xl font-bold text-red-600">-{memberData.totalDeducted}</p>
+              </div>
+              <div className="card flex-1 text-center">
+                <p className="text-sm text-gray-500">Net Balance</p>
+                <p className={`text-2xl font-bold ${memberData.points >= 0 ? "text-prokip-navy" : "text-red-600"}`}>
+                  {memberData.points}
+                </p>
+              </div>
+            </div>
+
+            {/* Transaction Table */}
+            <div className="card">
+              <h3 className="text-lg font-semibold text-prokip-navy mb-4">All Transactions</h3>
+              {ledgerLoading ? (
+                <div className="py-12 text-center text-gray-400">Loading...</div>
+              ) : (
+                <>
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-gray-200">
+                          <th className="text-left py-3 px-2 font-semibold text-prokip-navy text-sm">Date</th>
+                          <th className="text-right py-3 px-2 font-semibold text-prokip-navy text-sm">Points</th>
+                          <th className="text-left py-3 px-2 font-semibold text-prokip-navy text-sm">Reason</th>
+                          <th className="text-left py-3 px-2 font-semibold text-prokip-navy text-sm">Given By</th>
+                          <th className="text-left py-3 px-2 font-semibold text-prokip-navy text-sm">Policy</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {ledgerData.logs.map((log) => (
+                          <tr key={log.id} className="border-b border-gray-100 hover:bg-gray-50">
+                            <td className="py-3 px-2 text-sm text-gray-600">
+                              {new Date(log.createdAt).toLocaleDateString()}
+                            </td>
+                            <td className={`py-3 px-2 text-sm text-right font-semibold ${log.points > 0 ? "text-green-600" : "text-red-600"}`}>
+                              {formatPoints(log.points)}
+                            </td>
+                            <td className="py-3 px-2 text-sm text-prokip-navy max-w-[200px] truncate">
+                              {log.reason}
+                            </td>
+                            <td className="py-3 px-2 text-sm text-gray-600">
+                              {log.givenBy ? `${log.givenBy.firstName} ${log.givenBy.lastName}` : "—"}
+                            </td>
+                            <td className="py-3 px-2 text-sm text-gray-500">
+                              {log.policy?.name || "—"}
+                            </td>
+                          </tr>
+                        ))}
+                        {ledgerData.logs.length === 0 && (
+                          <tr>
+                            <td colSpan={5} className="py-8 text-center text-gray-400">
+                              No transactions found
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Pagination */}
+                  {ledgerData.total > 20 && (
+                    <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
+                      <p className="text-sm text-gray-500">
+                        Showing {((ledgerPage - 1) * 20) + 1}–{Math.min(ledgerPage * 20, ledgerData.total)} of {ledgerData.total}
+                      </p>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setLedgerPage(p => Math.max(1, p - 1))}
+                          disabled={ledgerPage === 1}
+                          className="p-2 rounded-lg border border-gray-200 disabled:opacity-30 hover:bg-gray-50"
+                        >
+                          <ChevronLeft className="w-4 h-4" />
+                        </button>
+                        <span className="flex items-center px-3 text-sm text-prokip-navy">
+                          Page {ledgerPage} of {Math.ceil(ledgerData.total / 20)}
+                        </span>
+                        <button
+                          onClick={() => setLedgerPage(p => p + 1)}
+                          disabled={ledgerPage >= Math.ceil(ledgerData.total / 20)}
+                          className="p-2 rounded-lg border border-gray-200 disabled:opacity-30 hover:bg-gray-50"
+                        >
+                          <ChevronRight className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ========== POLICIES & REWARDS TAB ========== */}
+        {memberTab === "policies" && (
+          <div className="space-y-6">
+            {/* Grade Definitions */}
+            <div className="card">
+              <h3 className="text-lg font-semibold text-prokip-navy mb-4">Grade Definitions</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {(memberData.rewardThresholds.length > 0 ? memberData.rewardThresholds : []).map((threshold) => {
+                  const gradeKey = threshold.grade as keyof typeof import("@/lib/grades").GRADE_CONFIG;
+                  const config = getGradeConfig(gradeKey as any);
+                  return (
+                    <div
+                      key={threshold.id}
+                      className="rounded-lg border-2 p-4"
+                      style={{ borderColor: config.color }}
+                    >
+                      <div className="flex items-center gap-3 mb-3">
+                        <GradeBadge grade={threshold.grade as any} size="sm" />
+                        <div>
+                          <p className="font-semibold text-prokip-navy">{threshold.title}</p>
+                          <p className="text-xs text-gray-500">
+                            {threshold.minPoints}+ pts{threshold.maxPoints ? ` (up to ${threshold.maxPoints})` : ""}
+                          </p>
+                        </div>
+                      </div>
+                      <p className="text-sm text-gray-600 mb-2">{threshold.description}</p>
+                      {threshold.reward && (
+                        <p className="text-sm text-green-600">
+                          <span className="font-medium">✅ Reward:</span> {threshold.reward}
+                        </p>
+                      )}
+                      {threshold.consequence && (
+                        <p className="text-sm text-red-600">
+                          <span className="font-medium">⚠️ Consequence:</span> {threshold.consequence}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
+                {memberData.rewardThresholds.length === 0 && (
+                  <p className="text-gray-500 col-span-full text-center py-6">No grade definitions configured</p>
+                )}
+              </div>
+            </div>
+
+            {/* Policy List */}
+            <div className="card">
+              <h3 className="text-lg font-semibold text-prokip-navy mb-4">Policy List</h3>
+              {memberData.policies.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-gray-200">
+                        <th className="text-left py-3 px-2 font-semibold text-prokip-navy text-sm">Policy</th>
+                        <th className="text-left py-3 px-2 font-semibold text-prokip-navy text-sm">Description</th>
+                        <th className="text-right py-3 px-2 font-semibold text-prokip-navy text-sm">Impact</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {memberData.policies.map((policy) => (
+                        <tr key={policy.id} className="border-b border-gray-100 hover:bg-gray-50">
+                          <td className="py-3 px-2 text-sm font-medium text-prokip-navy">{policy.name}</td>
+                          <td className="py-3 px-2 text-sm text-gray-600 max-w-[300px]">{policy.description}</td>
+                          <td className={`py-3 px-2 text-sm text-right font-semibold ${
+                            policy.pointImpact > 0 ? "text-green-600" : policy.pointImpact < 0 ? "text-red-600" : "text-gray-500"
+                          }`}>
+                            {policy.pointImpact > 0 ? `+${policy.pointImpact}` : policy.pointImpact}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p className="text-gray-500 text-center py-6">No policies configured</p>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </AppShell>
   );

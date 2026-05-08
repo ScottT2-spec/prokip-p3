@@ -87,6 +87,31 @@ export interface MemberDashboard {
   status: string;
 }
 
+export interface RewardThreshold {
+  id: string;
+  grade: string;
+  minPoints: number;
+  maxPoints: number | null;
+  title: string;
+  description: string;
+  reward: string | null;
+  consequence: string | null;
+}
+
+export interface EnhancedMemberDashboard extends MemberDashboard {
+  rewardPoints: number;
+  totalAdded: number;
+  totalDeducted: number;
+  nextGradeInfo: {
+    grade: string;
+    label: string;
+    minPoints: number;
+    pointsNeeded: number;
+  } | null;
+  policies: Policy[];
+  rewardThresholds: RewardThreshold[];
+}
+
 export type TaskStatus = "TODO" | "IN_PROGRESS" | "IN_REVIEW" | "DONE" | "CLOSED";
 
 export interface Task {

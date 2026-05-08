@@ -182,6 +182,59 @@ router.get('/member', authenticate, async (req, res) => {
         }) + 1
       : null;
 
+    // Point aggregations (reward points, total added, total deducted)
+    const [addedAgg, deductedAgg] = await Promise.all([
+      prisma.pointLog.aggregate({
+        where: { userId: req.user.id, points: { gt: 0 } },
+        _sum: { points: true },
+      }),
+      prisma.pointLog.aggregate({
+        where: { userId: req.user.id, points: { lt: 0 } },
+        _sum: { points: true },
+      }),
+    ]);
+
+    const rewardPoints = addedAgg._sum.points || 0;
+    const totalAdded = addedAgg._sum.points || 0;
+    const totalDeducted = Math.abs(deductedAgg._sum.points || 0);
+
+    // Next grade info
+    const gradeThresholds = [
+      { grade: 'F', label: 'F', minPoints: 0 },
+      { grade: 'C', label: 'C', minPoints: 60 },
+      { grade: 'B', label: 'B', minPoints: 75 },
+      { grade: 'A', label: 'A', minPoints: 90 },
+      { grade: 'A_PLUS', label: 'A+', minPoints: 105 },
+    ];
+    const currentIdx = gradeThresholds.findIndex(g => g.grade === user.grade);
+    let nextGradeInfo = null;
+    if (currentIdx >= 0 && currentIdx < gradeThresholds.length - 1) {
+      const next = gradeThresholds[currentIdx + 1];
+      nextGradeInfo = {
+        grade: next.grade,
+        label: next.label,
+        minPoints: next.minPoints,
+        pointsNeeded: Math.max(0, next.minPoints - user.points),
+      };
+    }
+
+    // Policies and reward thresholds for library sections
+    const [policies, rewardThresholds] = await Promise.all([
+      prisma.policy.findMany({
+        where: {
+          OR: [
+            { isGlobal: true },
+            ...(user.departmentId ? [{ departmentId: user.departmentId }] : []),
+          ],
+        },
+        orderBy: { name: 'asc' },
+      }),
+      prisma.rewardThreshold.findMany({
+        where: { departmentId: null },
+        orderBy: { minPoints: 'desc' },
+      }),
+    ]);
+
     res.json({
       points: user.points,
       grade: user.grade,
@@ -191,6 +244,12 @@ router.get('/member', authenticate, async (req, res) => {
       recentLogs,
       pointsTrend,
       status: gradeInfo.consequence || gradeInfo.reward || 'Good standing',
+      rewardPoints,
+      totalAdded,
+      totalDeducted,
+      nextGradeInfo,
+      policies,
+      rewardThresholds,
     });
   } catch (error) {
     console.error('Member dashboard error:', error);
