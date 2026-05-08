@@ -31,6 +31,7 @@ const menuItems = [
   { href: "/history", label: "History", icon: History, roles: ["MEMBER"] },
   { href: "/leaderboard", label: "Leaderboard", icon: Medal, roles: ["ADMIN", "LEAD", "MEMBER"] },
   { href: "/bulk-upload", label: "Bulk Upload", icon: Upload, roles: ["ADMIN", "LEAD"] },
+  { href: "/profile", label: "My Profile", icon: Users, roles: ["ADMIN", "LEAD", "MEMBER"] },
 ];
 
 export default function Sidebar() {
