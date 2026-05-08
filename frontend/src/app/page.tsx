@@ -8,7 +8,7 @@ import AppShell from "@/components/AppShell";
 import GradeBadge from "@/components/GradeBadge";
 import { PageSkeleton, CardSkeleton } from "@/components/LoadingSkeleton";
 import PointEntryModal from "@/components/PointEntryModal";
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, AreaChart, Area, CartesianGrid, Tooltip } from "recharts";
+import { AreaChart, Area, CartesianGrid, Tooltip, ResponsiveContainer, XAxis, YAxis } from "recharts";
 import { Users, TrendingUp, AlertTriangle, Award, Search, Filter, Plus, Clock, Star, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, BookOpen, Shield, Target } from "lucide-react";
 import { formatPoints, getGradeConfig } from "@/lib/grades";
 import { useRouter } from "next/navigation";
@@ -140,12 +140,6 @@ export default function Dashboard() {
   if (user?.role === "ADMIN" || user?.role === "LEAD") {
     if (!adminData) return null;
 
-    const gradeDistData = Object.entries(adminData.gradeDistribution).map(([grade, count]) => ({
-      grade: getGradeConfig(grade as any).label,
-      count,
-      fill: getGradeConfig(grade as any).color
-    }));
-
     return (
       <AppShell title="Dashboard">
         <div className="space-y-8">
@@ -197,21 +191,6 @@ export default function Dashboard() {
                   <p className="text-2xl font-bold text-prokip-navy">{adminData.stats.topPerformerCount}</p>
                 </div>
               </div>
-            </div>
-          </div>
-
-          {/* Grade Distribution Chart */}
-          <div className="card">
-            <h3 className="text-lg font-semibold text-prokip-navy mb-6">Grade Distribution</h3>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={gradeDistData}>
-                  <XAxis dataKey="grade" />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="count" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
             </div>
           </div>
 
