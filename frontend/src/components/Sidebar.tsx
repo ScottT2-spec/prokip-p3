@@ -14,6 +14,7 @@ import {
   ChevronLeft,
   Menu,
   Trophy,
+  Medal,
 } from "lucide-react";
 import GradeBadge from "./GradeBadge";
 import { useState } from "react";
@@ -24,6 +25,7 @@ const menuItems = [
   { href: "/policies", label: "Policies", icon: FileText, roles: ["ADMIN", "LEAD"] },
   { href: "/departments", label: "Departments", icon: Building2, roles: ["ADMIN"] },
   { href: "/grades", label: "Grades & Rewards", icon: Trophy, roles: ["ADMIN", "LEAD", "MEMBER"] },
+  { href: "/leaderboard", label: "Leaderboard", icon: Medal, roles: ["ADMIN", "LEAD", "MEMBER"] },
 ];
 
 export default function Sidebar() {
