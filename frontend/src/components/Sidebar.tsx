@@ -15,6 +15,7 @@ import {
   Menu,
   Trophy,
   Medal,
+  Upload,
 } from "lucide-react";
 import GradeBadge from "./GradeBadge";
 import { useState } from "react";
@@ -26,6 +27,7 @@ const menuItems = [
   { href: "/departments", label: "Departments", icon: Building2, roles: ["ADMIN"] },
   { href: "/grades", label: "Grades & Rewards", icon: Trophy, roles: ["ADMIN", "LEAD", "MEMBER"] },
   { href: "/leaderboard", label: "Leaderboard", icon: Medal, roles: ["ADMIN", "LEAD", "MEMBER"] },
+  { href: "/bulk-upload", label: "Bulk Upload", icon: Upload, roles: ["ADMIN", "LEAD"] },
 ];
 
 export default function Sidebar() {
