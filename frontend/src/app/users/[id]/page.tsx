@@ -257,13 +257,27 @@ export default function UserDetailPage() {
 
           {userData.role !== "ADMIN" && (
             <div className="card text-center">
-              <h3 className="font-semibold text-prokip-navy mb-4">Current Performance</h3>
+              <h3 className="font-semibold text-prokip-navy mb-4">Current Standing</h3>
               <div className="space-y-4">
                 <div>
-                  <p className="section-label">Points</p>
+                  <p className="section-label">Net Points</p>
                   <p className={`text-3xl font-bold ${userData.points >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                     {userData.points}
                   </p>
+                </div>
+                <div className="grid grid-cols-2 gap-3 pt-2">
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <p className="text-[10px] font-semibold tracking-wider text-gray-500 uppercase">⚙️ Performance</p>
+                    <p className="text-lg font-bold text-prokip-navy">
+                      {userData.pointLogs?.filter(log => log.category !== "REWARD").reduce((sum, log) => sum + log.points, 0) || 0}
+                    </p>
+                  </div>
+                  <div className="bg-amber-50 rounded-lg p-3">
+                    <p className="text-[10px] font-semibold tracking-wider text-amber-600 uppercase">🌟 Reward</p>
+                    <p className="text-lg font-bold text-prokip-gold">
+                      {userData.pointLogs?.filter(log => log.category === "REWARD").reduce((sum, log) => sum + log.points, 0) || 0}
+                    </p>
+                  </div>
                 </div>
                 <div>
                   <p className="section-label">Grade</p>
@@ -284,13 +298,13 @@ export default function UserDetailPage() {
                   <p className="text-prokip-navy font-semibold">{userData.pointLogs?.length || 0}</p>
                 </div>
                 <div>
-                  <p className="section-label">Positive Points</p>
+                  <p className="section-label">Total Earned</p>
                   <p className="text-green-600 font-semibold">
                     +{userData.pointLogs?.filter(log => log.points > 0).reduce((sum, log) => sum + log.points, 0) || 0}
                   </p>
                 </div>
                 <div>
-                  <p className="section-label">Negative Points</p>
+                  <p className="section-label">Total Deducted</p>
                   <p className="text-red-600 font-semibold">
                     {userData.pointLogs?.filter(log => log.points < 0).reduce((sum, log) => sum + log.points, 0) || 0}
                   </p>
