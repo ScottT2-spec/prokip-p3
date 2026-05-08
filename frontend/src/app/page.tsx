@@ -74,12 +74,12 @@ export default function Dashboard() {
         const response = await api.get(`/api/dashboard/admin?${params}`);
         setAdminData(response.data);
       } else {
-        const [dashRes, lbRes] = await Promise.all([
-          api.get("/api/dashboard/member"),
-          api.get("/api/leaderboard?limit=10"),
-        ]);
-        setMemberData(dashRes.data);
-        setLeaderboardData(lbRes.data.leaderboard || []);
+        const response = await api.get("/api/dashboard/member");
+        setMemberData(response.data);
+        // Load leaderboard separately so it doesn't block dashboard
+        api.get("/api/leaderboard?limit=10")
+          .then(res => setLeaderboardData(res.data.leaderboard || res.data || []))
+          .catch(() => setLeaderboardData([]));
       }
     } catch (error) {
       toast.error("Failed to load dashboard data");
@@ -630,11 +630,11 @@ export default function Dashboard() {
                   </button>
                 </div>
                 <div className="space-y-2">
-                  {leaderboardData.map((entry, index) => (
+                  {leaderboardData.map((entry: any, index: number) => (
                     <div
-                      key={entry.id}
+                      key={entry.userId || entry.id}
                       className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${
-                        entry.id === user?.id ? "bg-prokip-gold/10 border border-prokip-gold/30" : "hover:bg-gray-50"
+                        (entry.userId || entry.id) === user?.id ? "bg-prokip-gold/10 border border-prokip-gold/30" : "hover:bg-gray-50"
                       }`}
                     >
                       <span className={`w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold flex-shrink-0 ${
@@ -643,16 +643,16 @@ export default function Dashboard() {
                         index === 2 ? "bg-orange-100 text-orange-700" :
                         "bg-gray-100 text-gray-500"
                       }`}>
-                        {index + 1}
+                        {entry.rank || index + 1}
                       </span>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-prokip-navy truncate">
                           {entry.firstName} {entry.lastName}
-                          {entry.id === user?.id && <span className="text-xs text-prokip-gold ml-1">(You)</span>}
+                          {(entry.userId || entry.id) === user?.id && <span className="text-xs text-prokip-gold ml-1">(You)</span>}
                         </p>
                       </div>
                       <GradeBadge grade={entry.grade} size="sm" />
-                      <span className="font-semibold text-sm text-prokip-navy flex-shrink-0">{entry.points} pts</span>
+                      <span className="font-semibold text-sm text-prokip-navy flex-shrink-0">{entry.totalPoints ?? entry.points} pts</span>
                     </div>
                   ))}
                   {leaderboardData.length === 0 && (
