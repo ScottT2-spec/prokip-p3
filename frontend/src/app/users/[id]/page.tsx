@@ -269,7 +269,7 @@ export default function UserDetailPage() {
                   <div className="bg-gray-50 rounded-lg p-3">
                     <p className="text-[10px] font-semibold tracking-wider text-gray-500 uppercase">⚙️ Performance</p>
                     <p className="text-lg font-bold text-prokip-navy">
-                      {userData.pointLogs?.filter(log => log.category !== "REWARD").reduce((sum, log) => sum + log.points, 0) || 0}
+                      {userData.points - (userData.pointLogs?.filter(log => log.category === "REWARD").reduce((sum, log) => sum + log.points, 0) || 0)}
                     </p>
                   </div>
                   <div className="bg-amber-50 rounded-lg p-3">

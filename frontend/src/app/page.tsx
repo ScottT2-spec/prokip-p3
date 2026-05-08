@@ -495,8 +495,8 @@ export default function Dashboard() {
               {/* Performance */}
               <div className="card">
                 <p className="section-label mb-1">Performance</p>
-                <p className={`text-3xl font-bold ${memberData.points >= 0 ? "text-prokip-navy" : "text-red-600"}`}>
-                  {memberData.points}
+                <p className={`text-3xl font-bold ${(memberData.points - (memberData.rewardPoints || 0)) >= 0 ? "text-prokip-navy" : "text-red-600"}`}>
+                  {memberData.points - (memberData.rewardPoints || 0)}
                 </p>
                 {memberData.nextGradeInfo && (
                   <div className="mt-3">
