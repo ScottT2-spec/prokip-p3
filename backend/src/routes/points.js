@@ -223,6 +223,7 @@ router.post('/bulk', authenticate, authorize('ADMIN', 'LEAD'), async (req, res) 
         const newTotal = targetUser.points + pointsInt;
         const newGrade = targetUser.role === 'ADMIN' ? targetUser.grade : calculateGrade(newTotal);
         const previousGrade = targetUser.grade;
+        const bulkCategory = entry.type === 'Reward' ? 'REWARD' : 'PERFORMANCE';
 
         const [pointLog, updatedUser] = await prisma.$transaction([
           prisma.pointLog.create({
@@ -230,6 +231,7 @@ router.post('/bulk', authenticate, authorize('ADMIN', 'LEAD'), async (req, res) 
               userId: entry.userId,
               givenById: req.user.id,
               points: pointsInt,
+              category: bulkCategory,
               reason: entry.reason.trim(),
             },
           }),
@@ -240,10 +242,41 @@ router.post('/bulk', authenticate, authorize('ADMIN', 'LEAD'), async (req, res) 
           }),
         ]);
 
+        // Create in-app notification
+        const isHighFive = newGrade === 'A_PLUS' && previousGrade !== 'A_PLUS';
+        const notifTitle = isHighFive
+          ? '🖐 Platinum High-Five!'
+          : pointsInt > 0
+            ? `+${pointsInt} Points Awarded`
+            : `${pointsInt} Points Deducted`;
+        const notifMessage = isHighFive
+          ? `You've hit the A+ Tier with ${newTotal} points! ${entry.reason.trim()}`
+          : `${bulkCategory === 'REWARD' ? '🌟 Reward' : '⚙️ Performance'}: ${entry.reason.trim()}`;
+
+        const notification = await prisma.notification.create({
+          data: {
+            userId: entry.userId,
+            type: isHighFive ? 'PLATINUM_HIGH_FIVE' : 'POINT_UPDATE',
+            title: notifTitle,
+            message: notifMessage,
+            metadata: {
+              points: pointsInt,
+              category: bulkCategory,
+              reason: entry.reason.trim(),
+              newTotal,
+              givenBy: `${req.user.firstName} ${req.user.lastName}`,
+            },
+          },
+        });
+
+        // Push real-time via SSE
+        pushToUser(entry.userId, notification);
+
         // Send emails (non-blocking)
-        sendPointChangeEmail(updatedUser, pointsInt, newTotal, entry.reason.trim(), req.user);
-        if (newGrade === 'A_PLUS' && previousGrade !== 'A_PLUS') {
+        if (isHighFive) {
           sendPlatinumHighFive(updatedUser, newTotal);
+        } else {
+          sendPointChangeEmail(updatedUser, pointsInt, newTotal, entry.reason.trim(), req.user, bulkCategory);
         }
 
         results.push({ userId: entry.userId, newPoints: newTotal, newGrade });
