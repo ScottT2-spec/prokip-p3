@@ -91,6 +91,7 @@ model PointLog {
   policyId   String?
   policy     Policy?  @relation(fields: [policyId], references: [id])
   points     Int
+  category   PointCategory @default(PERFORMANCE)
   reason     String
   ticketLink String?
   imageUrl   String?
@@ -132,6 +133,11 @@ model QuarterSettings {
   updatedAt   DateTime @updatedAt
 
   @@map("quarter_settings")
+}
+
+enum PointCategory {
+  PERFORMANCE
+  REWARD
 }
 
 enum TaskStatus {

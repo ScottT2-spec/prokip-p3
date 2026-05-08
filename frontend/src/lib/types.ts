@@ -32,10 +32,13 @@ export interface Policy {
   department?: Department | null;
 }
 
+export type PointCategory = "PERFORMANCE" | "REWARD";
+
 export interface PointLog {
   id: string;
   userId: string;
   points: number;
+  category?: PointCategory;
   reason: string;
   ticketLink?: string | null;
   imageUrl?: string | null;

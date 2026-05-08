@@ -79,6 +79,9 @@ export default function HistoryPage() {
                     Points
                   </th>
                   <th className="text-left py-3 px-3 font-semibold text-prokip-navy text-sm">
+                    Type
+                  </th>
+                  <th className="text-left py-3 px-3 font-semibold text-prokip-navy text-sm">
                     Policy
                   </th>
                   <th className="text-left py-3 px-3 font-semibold text-prokip-navy text-sm">
@@ -111,6 +114,15 @@ export default function HistoryPage() {
                       >
                         {formatPoints(log.points)}
                       </span>
+                    </td>
+                    <td className="py-3 px-3">
+                      {log.category === "REWARD" ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+                          🌟 Reward
+                        </span>
+                      ) : (
+                        <span className="text-sm text-gray-600">Performance</span>
+                      )}
                     </td>
                     <td className="py-3 px-3 text-gray-600 text-sm">
                       {log.policy?.name || "—"}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { User, Policy } from "@/lib/types";
+import { User, Policy, PointCategory } from "@/lib/types";
 import api from "@/lib/api";
 import Modal from "./Modal";
 import { formatPoints } from "@/lib/grades";
@@ -19,6 +19,7 @@ export default function PointEntryModal({ open, onClose, preSelectedUser, onSucc
   const [users, setUsers] = useState<User[]>([]);
   const [policies, setPolicies] = useState<Policy[]>([]);
   const [selectedUserId, setSelectedUserId] = useState("");
+  const [category, setCategory] = useState<PointCategory>("PERFORMANCE");
   const [selectedPolicyId, setSelectedPolicyId] = useState("");
   const [customPoints, setCustomPoints] = useState("");
   const [reason, setReason] = useState("");
@@ -82,6 +83,7 @@ export default function PointEntryModal({ open, onClose, preSelectedUser, onSucc
       const formData = new FormData();
       formData.append("userId", selectedUserId);
       formData.append("points", String(pointsToApply));
+      formData.append("category", category);
       formData.append("reason", reason.trim());
       if (selectedPolicyId) formData.append("policyId", selectedPolicyId);
       if (ticketLink.trim()) formData.append("ticketLink", ticketLink.trim());
@@ -103,6 +105,7 @@ export default function PointEntryModal({ open, onClose, preSelectedUser, onSucc
 
   const handleClose = () => {
     setSelectedUserId("");
+    setCategory("PERFORMANCE");
     setSelectedPolicyId("");
     setCustomPoints("");
     setReason("");
@@ -161,6 +164,35 @@ export default function PointEntryModal({ open, onClose, preSelectedUser, onSucc
               </select>
             </div>
           )}
+
+          {/* Category Toggle */}
+          <div>
+            <label className="input-label">Type *</label>
+            <div className="flex rounded-lg border border-gray-200 overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setCategory("PERFORMANCE")}
+                className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
+                  category === "PERFORMANCE"
+                    ? "bg-prokip-navy text-white"
+                    : "bg-white text-gray-500 hover:bg-gray-50"
+                }`}
+              >
+                ⚙️ Performance
+              </button>
+              <button
+                type="button"
+                onClick={() => setCategory("REWARD")}
+                className={`flex-1 py-2.5 text-sm font-medium transition-colors border-l border-gray-200 ${
+                  category === "REWARD"
+                    ? "bg-prokip-gold text-prokip-navy-dark"
+                    : "bg-white text-gray-500 hover:bg-gray-50"
+                }`}
+              >
+                🌟 Reward
+              </button>
+            </div>
+          </div>
 
           <div>
             <label className="input-label">Policy</label>

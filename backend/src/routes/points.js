@@ -12,11 +12,14 @@ const router = express.Router();
 // Accepts multipart/form-data (with optional image) or JSON
 router.post('/', authenticate, authorize('ADMIN', 'LEAD'), upload.single('image'), async (req, res) => {
   try {
-    const { userId, policyId, points, reason, ticketLink } = req.body;
+    const { userId, policyId, points, reason, ticketLink, category } = req.body;
 
     if (!userId || !reason || points === undefined) {
       return res.status(400).json({ error: 'userId, points, and reason are required.' });
     }
+
+    const validCategories = ['PERFORMANCE', 'REWARD'];
+    const pointCategory = validCategories.includes(category) ? category : 'PERFORMANCE';
 
     const pointsInt = parseInt(points);
     if (isNaN(pointsInt)) {
@@ -64,6 +67,7 @@ router.post('/', authenticate, authorize('ADMIN', 'LEAD'), upload.single('image'
           givenById: req.user.id,
           policyId: policyId || null,
           points: pointValue,
+          category: pointCategory,
           reason,
           ticketLink: ticketLink || null,
           imageUrl: imageUrl || null,
