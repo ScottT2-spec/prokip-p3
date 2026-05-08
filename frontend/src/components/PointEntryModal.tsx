@@ -50,6 +50,10 @@ export default function PointEntryModal({ open, onClose, preSelectedUser, onSucc
     }
   }, [open, preSelectedUser]);
 
+  // Performance = deduction policies only (negative), Reward = addition policies only (positive)
+  const filteredPolicies = policies.filter(p =>
+    category === "PERFORMANCE" ? p.pointImpact < 0 : p.pointImpact > 0
+  );
   const selectedPolicy = policies.find(p => p.id === selectedPolicyId);
   const pointsToApply = selectedPolicy ? selectedPolicy.pointImpact : parseInt(customPoints) || 0;
 
@@ -171,7 +175,7 @@ export default function PointEntryModal({ open, onClose, preSelectedUser, onSucc
             <div className="flex rounded-lg border border-gray-200 overflow-hidden">
               <button
                 type="button"
-                onClick={() => setCategory("PERFORMANCE")}
+                onClick={() => { setCategory("PERFORMANCE"); setSelectedPolicyId(""); setCustomPoints(""); }}
                 className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
                   category === "PERFORMANCE"
                     ? "bg-prokip-navy text-white"
@@ -182,7 +186,7 @@ export default function PointEntryModal({ open, onClose, preSelectedUser, onSucc
               </button>
               <button
                 type="button"
-                onClick={() => setCategory("REWARD")}
+                onClick={() => { setCategory("REWARD"); setSelectedPolicyId(""); setCustomPoints(""); }}
                 className={`flex-1 py-2.5 text-sm font-medium transition-colors border-l border-gray-200 ${
                   category === "REWARD"
                     ? "bg-prokip-gold text-prokip-navy-dark"
@@ -202,7 +206,7 @@ export default function PointEntryModal({ open, onClose, preSelectedUser, onSucc
               className="input-field"
             >
               <option value="">Select a policy...</option>
-              {policies.map((policy) => (
+              {filteredPolicies.map((policy) => (
                 <option key={policy.id} value={policy.id}>
                   {policy.name} ({formatPoints(policy.pointImpact)} points)
                 </option>
