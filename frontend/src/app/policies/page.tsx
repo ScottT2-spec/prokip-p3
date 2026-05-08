@@ -461,36 +461,21 @@ export default function PoliciesPage() {
             </div>
           ) : (
             <>
-              <p className="text-gray-600">
-                Upload a CSV or JSON file with multiple policies. 
+              <p className="text-gray-600 text-sm">
+                Upload a file with your policies. Supported formats: CSV, JSON.
               </p>
 
-              <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-                <p className="text-sm font-medium text-prokip-navy">CSV format:</p>
-                <code className="block text-xs bg-white p-3 rounded border border-gray-200 text-gray-700">
-                  name,description,pointImpact<br />
-                  Early Delivery,+5 per 24hrs ahead,5<br />
-                  Missed Deadline,Missing agreed deadline,-15
-                </code>
-
-                <p className="text-sm font-medium text-prokip-navy mt-3">JSON format:</p>
-                <code className="block text-xs bg-white p-3 rounded border border-gray-200 text-gray-700">
-                  {'[{"name":"...","description":"...","pointImpact":5}]'}
-                </code>
-              </div>
-
-              <label className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
+              <label className={`flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
                 bulkLoading ? 'border-gray-300 bg-gray-50' : 'border-gray-300 hover:border-prokip-navy hover:bg-gray-50'
               }`}>
-                <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                <div className="flex flex-col items-center justify-center">
                   {bulkLoading ? (
                     <p className="text-sm text-gray-500">Uploading...</p>
                   ) : (
                     <>
-                      <Upload className="w-8 h-8 text-gray-400 mb-2" />
-                      <p className="text-sm text-gray-500">
-                        Click to upload <span className="font-medium">.csv</span> or <span className="font-medium">.json</span>
-                      </p>
+                      <Upload className="w-10 h-10 text-gray-400 mb-3" />
+                      <p className="text-sm font-medium text-prokip-navy">Click to upload</p>
+                      <p className="text-xs text-gray-400 mt-1">CSV or JSON</p>
                     </>
                   )}
                 </div>
