@@ -151,6 +151,181 @@ router.delete('/definitions/:id', authenticate, authorize('ADMIN', 'LEAD'), asyn
 });
 
 // ============================================================
+// REWARD POLICIES
+// ============================================================
+
+const VALID_REWARD_TYPES = ['MONETARY', 'GROWTH', 'FLEXIBILITY', 'RECOGNITION', 'CONSEQUENCE'];
+const GRADE_SORT_ORDER = { A_PLUS: 0, A: 1, B: 2, C: 3, F: 4 };
+
+/**
+ * GET /api/grades/rewards
+ * Get all reward policies (role-scoped)
+ */
+router.get('/rewards', authenticate, async (req, res) => {
+  try {
+    const { grade, departmentId } = req.query;
+    const where = { isActive: true };
+
+    // Role-based scoping
+    if (req.user.role === 'LEAD' || req.user.role === 'MEMBER') {
+      where.OR = [
+        { departmentId: null },
+        { departmentId: req.user.departmentId },
+      ];
+    }
+
+    if (grade && VALID_GRADES.includes(grade)) {
+      where.grade = grade;
+    }
+
+    if (departmentId) {
+      // Override the OR with specific department filter
+      if (req.user.role === 'ADMIN') {
+        where.OR = [
+          { departmentId: null },
+          { departmentId },
+        ];
+      }
+    }
+
+    const rewards = await prisma.rewardPolicy.findMany({
+      where,
+      include: {
+        department: { select: { id: true, name: true } },
+      },
+    });
+
+    // Sort by grade order
+    rewards.sort((a, b) => {
+      const aIdx = GRADE_SORT_ORDER[a.grade] ?? 99;
+      const bIdx = GRADE_SORT_ORDER[b.grade] ?? 99;
+      return aIdx - bIdx;
+    });
+
+    res.json({ rewards });
+  } catch (error) {
+    console.error('Get reward policies error:', error);
+    res.status(500).json({ error: 'Failed to load reward policies.' });
+  }
+});
+
+/**
+ * POST /api/grades/rewards
+ * Create a reward policy (ADMIN, LEAD)
+ */
+router.post('/rewards', authenticate, authorize('ADMIN', 'LEAD'), [
+  body('grade').isIn(VALID_GRADES).withMessage('Invalid grade'),
+  body('title').notEmpty().withMessage('Title required'),
+  body('description').notEmpty().withMessage('Description required'),
+  body('type').isIn(VALID_REWARD_TYPES).withMessage('Invalid reward type'),
+  body('departmentId').optional({ nullable: true }).isString(),
+], async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+
+  try {
+    const { grade, title, description, type, departmentId } = req.body;
+
+    // Leads can only create for their department
+    if (req.user.role === 'LEAD') {
+      if (departmentId && departmentId !== req.user.departmentId) {
+        return res.status(403).json({ error: 'Leads can only create rewards for their own department.' });
+      }
+    }
+
+    const reward = await prisma.rewardPolicy.create({
+      data: {
+        grade,
+        title,
+        description,
+        type,
+        departmentId: departmentId || null,
+      },
+      include: { department: { select: { id: true, name: true } } },
+    });
+
+    res.status(201).json({ reward });
+  } catch (error) {
+    console.error('Create reward policy error:', error);
+    res.status(500).json({ error: 'Failed to create reward policy.' });
+  }
+});
+
+/**
+ * PUT /api/grades/rewards/:id
+ * Update a reward policy (ADMIN, LEAD)
+ */
+router.put('/rewards/:id', authenticate, authorize('ADMIN', 'LEAD'), [
+  body('grade').optional().isIn(VALID_GRADES).withMessage('Invalid grade'),
+  body('title').optional().notEmpty().withMessage('Title cannot be empty'),
+  body('description').optional().notEmpty().withMessage('Description cannot be empty'),
+  body('type').optional().isIn(VALID_REWARD_TYPES).withMessage('Invalid reward type'),
+  body('departmentId').optional({ nullable: true }).isString(),
+], async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+
+  try {
+    const existing = await prisma.rewardPolicy.findUnique({ where: { id: req.params.id } });
+    if (!existing) return res.status(404).json({ error: 'Reward policy not found.' });
+
+    // Leads can only edit their department's rewards
+    if (req.user.role === 'LEAD') {
+      if (existing.departmentId !== req.user.departmentId) {
+        return res.status(403).json({ error: 'Can only manage your department rewards.' });
+      }
+    }
+
+    const { grade, title, description, type, departmentId } = req.body;
+    const data = {};
+    if (grade !== undefined) data.grade = grade;
+    if (title !== undefined) data.title = title;
+    if (description !== undefined) data.description = description;
+    if (type !== undefined) data.type = type;
+    if (departmentId !== undefined) data.departmentId = departmentId || null;
+    data.updatedAt = new Date();
+
+    const reward = await prisma.rewardPolicy.update({
+      where: { id: req.params.id },
+      data,
+      include: { department: { select: { id: true, name: true } } },
+    });
+
+    res.json({ reward });
+  } catch (error) {
+    console.error('Update reward policy error:', error);
+    res.status(500).json({ error: 'Failed to update reward policy.' });
+  }
+});
+
+/**
+ * DELETE /api/grades/rewards/:id
+ * Delete a reward policy (ADMIN, LEAD)
+ */
+router.delete('/rewards/:id', authenticate, authorize('ADMIN', 'LEAD'), async (req, res) => {
+  try {
+    const existing = await prisma.rewardPolicy.findUnique({ where: { id: req.params.id } });
+    if (!existing) return res.status(404).json({ error: 'Reward policy not found.' });
+
+    // Leads can only delete their department's rewards
+    if (req.user.role === 'LEAD') {
+      if (existing.departmentId !== req.user.departmentId) {
+        return res.status(403).json({ error: 'Can only manage your department rewards.' });
+      }
+      if (!existing.departmentId) {
+        return res.status(403).json({ error: 'Only admins can delete global reward policies.' });
+      }
+    }
+
+    await prisma.rewardPolicy.delete({ where: { id: req.params.id } });
+    res.json({ message: 'Reward policy deleted.' });
+  } catch (error) {
+    console.error('Delete reward policy error:', error);
+    res.status(500).json({ error: 'Failed to delete reward policy.' });
+  }
+});
+
+// ============================================================
 // QUARTER SETTINGS
 // ============================================================
 

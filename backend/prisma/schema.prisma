@@ -62,6 +62,7 @@ model Department {
   policies          Policy[]
   rewardThresholds  RewardThreshold[]
   quarterSettings   QuarterSettings[]
+  rewardPolicies    RewardPolicy[]
 
   @@map("departments")
 }
@@ -134,6 +135,31 @@ model QuarterSettings {
   updatedAt   DateTime @updatedAt
 
   @@map("quarter_settings")
+}
+
+enum RewardType {
+  MONETARY
+  GROWTH
+  FLEXIBILITY
+  RECOGNITION
+  CONSEQUENCE
+}
+
+model RewardPolicy {
+  id           String      @id @default(uuid())
+  grade        Grade
+  title        String
+  description  String
+  type         RewardType  @default(RECOGNITION)
+  isActive     Boolean     @default(true)
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id])
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@index([grade])
+  @@index([departmentId])
+  @@map("reward_policies")
 }
 
 enum PointCategory {

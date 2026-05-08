@@ -129,6 +129,20 @@ export interface Notification {
   createdAt: string;
 }
 
+export type RewardPolicyType = "MONETARY" | "GROWTH" | "FLEXIBILITY" | "RECOGNITION" | "CONSEQUENCE";
+
+export interface RewardPolicy {
+  id: string;
+  grade: Grade;
+  title: string;
+  description: string;
+  type: RewardPolicyType;
+  isActive: boolean;
+  departmentId?: string | null;
+  department?: Department | null;
+  createdAt?: string;
+}
+
 export type TaskStatus = "TODO" | "IN_PROGRESS" | "IN_REVIEW" | "DONE" | "CLOSED";
 
 export interface Task {
