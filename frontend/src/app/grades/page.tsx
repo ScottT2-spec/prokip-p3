@@ -8,7 +8,7 @@ import AppShell from "@/components/AppShell";
 import Modal from "@/components/Modal";
 import GradeBadge from "@/components/GradeBadge";
 import { PageSkeleton } from "@/components/LoadingSkeleton";
-import { Plus, Edit3, Trash2, Calendar, Award, AlertTriangle } from "lucide-react";
+import { Plus, Edit3, Trash2, Calendar } from "lucide-react";
 import { Grade, gradeOrder } from "@/lib/grades";
 import { Department } from "@/lib/types";
 import toast from "react-hot-toast";
@@ -220,15 +220,8 @@ export default function GradesPage() {
             <thead>
               <tr className="border-b border-gray-200">
                 <th className="text-left py-3 px-3 font-semibold text-prokip-navy text-sm">Grade</th>
-                <th className="text-left py-3 px-3 font-semibold text-prokip-navy text-sm">Points Range</th>
-                <th className="text-left py-3 px-3 font-semibold text-prokip-navy text-sm">Title</th>
-                <th className="text-left py-3 px-3 font-semibold text-prokip-navy text-sm">Description</th>
-                <th className="text-left py-3 px-3 font-semibold text-prokip-navy text-sm">
-                  <span className="flex items-center gap-1"><Award className="w-3.5 h-3.5 text-green-600" /> Reward</span>
-                </th>
-                <th className="text-left py-3 px-3 font-semibold text-prokip-navy text-sm">
-                  <span className="flex items-center gap-1"><AlertTriangle className="w-3.5 h-3.5 text-red-500" /> Consequence</span>
-                </th>
+                <th className="text-left py-3 px-3 font-semibold text-prokip-navy text-sm">Min Points</th>
+                <th className="text-left py-3 px-3 font-semibold text-prokip-navy text-sm">Max Points</th>
                 {canManage && <th className="text-right py-3 px-3 font-semibold text-prokip-navy text-sm">Actions</th>}
               </tr>
             </thead>
@@ -239,15 +232,10 @@ export default function GradesPage() {
                     <GradeBadge grade={def.grade} size="sm" />
                   </td>
                   <td className="py-3 px-3 text-sm font-mono text-prokip-navy">
-                    {def.minPoints}{def.maxPoints ? `–${def.maxPoints}` : "+"}
+                    {def.minPoints}
                   </td>
-                  <td className="py-3 px-3 text-sm font-medium text-prokip-navy">{def.title}</td>
-                  <td className="py-3 px-3 text-sm text-gray-600 max-w-[200px]">{def.description}</td>
-                  <td className="py-3 px-3 text-sm text-green-700 max-w-[200px]">
-                    {def.reward || <span className="text-gray-300">—</span>}
-                  </td>
-                  <td className="py-3 px-3 text-sm text-red-700 max-w-[200px]">
-                    {def.consequence || <span className="text-gray-300">—</span>}
+                  <td className="py-3 px-3 text-sm font-mono text-prokip-navy">
+                    {def.maxPoints ?? "∞"}
                   </td>
                   {canManage && (
                     <td className="py-3 px-3 text-right">
@@ -265,7 +253,7 @@ export default function GradesPage() {
               ))}
               {sorted.length === 0 && (
                 <tr>
-                  <td colSpan={canManage ? 7 : 6} className="py-8 text-center text-gray-400">
+                  <td colSpan={canManage ? 4 : 3} className="py-8 text-center text-gray-400">
                     No grade definitions yet
                   </td>
                 </tr>
@@ -285,8 +273,16 @@ export default function GradesPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-prokip-navy">Grade System & Rewards</h1>
-            <p className="text-gray-600 mt-1">Define grades, point thresholds, rewards and consequences</p>
+            <h1 className="text-2xl font-bold text-prokip-navy">Grade System</h1>
+            <p className="text-gray-600 mt-1">
+              Define grades and point thresholds.{" "}
+              <button
+                onClick={() => router.push("/rewards")}
+                className="text-prokip-navy font-medium hover:underline"
+              >
+                Manage Policies & Rewards →
+              </button>
+            </p>
           </div>
           {canManage && (
             <div className="flex gap-2">
