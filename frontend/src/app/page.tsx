@@ -524,26 +524,7 @@ export default function Dashboard() {
                 <p className="text-xs text-gray-500 mt-1">Total points earned</p>
               </div>
 
-              {/* Total Added vs Deducted */}
-              <div className="card">
-                <p className="section-label mb-2">Added vs Deducted</p>
-                <div className="flex items-end gap-4">
-                  <div>
-                    <div className="flex items-center gap-1">
-                      <ArrowUp className="w-4 h-4 text-green-600" />
-                      <span className="text-green-600 text-xl font-bold">+{memberData.totalAdded}</span>
-                    </div>
-                    <p className="text-xs text-gray-500">Added</p>
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-1">
-                      <ArrowDown className="w-4 h-4 text-red-600" />
-                      <span className="text-red-600 text-xl font-bold">-{memberData.totalDeducted}</span>
-                    </div>
-                    <p className="text-xs text-gray-500">Deducted</p>
-                  </div>
-                </div>
-              </div>
+
             </div>
 
             {/* Section B: Progress to Next Grade */}
