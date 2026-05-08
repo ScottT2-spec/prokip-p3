@@ -112,6 +112,23 @@ export interface EnhancedMemberDashboard extends MemberDashboard {
   rewardThresholds: RewardThreshold[];
 }
 
+export interface Notification {
+  id: string;
+  userId: string;
+  type: "POINT_UPDATE" | "PLATINUM_HIGH_FIVE";
+  title: string;
+  message: string;
+  metadata?: {
+    points?: number;
+    category?: PointCategory;
+    reason?: string;
+    newTotal?: number;
+    givenBy?: string;
+  };
+  read: boolean;
+  createdAt: string;
+}
+
 export type TaskStatus = "TODO" | "IN_PROGRESS" | "IN_REVIEW" | "DONE" | "CLOSED";
 
 export interface Task {

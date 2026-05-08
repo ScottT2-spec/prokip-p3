@@ -38,6 +38,7 @@ model User {
   // Relations
   pointLogs      PointLog[]      @relation("PointReceiver")
   pointsGiven    PointLog[]      @relation("PointGiver")
+  notifications  Notification[]
   tasks          Task[]          @relation("TaskAssignee")
   tasksAssigned  Task[]          @relation("TaskAssigner")
   taskActivities TaskActivity[]
@@ -138,6 +139,22 @@ model QuarterSettings {
 enum PointCategory {
   PERFORMANCE
   REWARD
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  type      String   @default("POINT_UPDATE") // POINT_UPDATE, PLATINUM_HIGH_FIVE
+  title     String
+  message   String
+  metadata  Json?    // { points, category, reason, givenBy, newTotal }
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId, read, createdAt(sort: Desc)])
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("notifications")
 }
 
 enum TaskStatus {

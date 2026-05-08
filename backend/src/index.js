@@ -12,6 +12,7 @@ const dashboardRoutes = require('./routes/dashboard');
 const slaRoutes = require('./routes/sla');
 const gradeRoutes = require('./routes/grades');
 const leaderboardRoutes = require('./routes/leaderboard');
+const { router: notificationRoutes } = require('./routes/notifications');
 // Ghosting detection via cronService (connects to external task board)
 const { startCronJobs } = require('./services/cronService');
 
@@ -33,6 +34,7 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/sla', slaRoutes);
 app.use('/api/grades', gradeRoutes);
 app.use('/api/leaderboard', leaderboardRoutes);
+app.use('/api/notifications', notificationRoutes);
 // Task board ghosting integration handled via cronService (no standalone task CRUD)
 
 // Health check
@@ -77,6 +79,28 @@ app.listen(PORT, async () => {
 
     // Add imageUrl to point_logs if missing
     await prisma.$executeRawUnsafe(`ALTER TABLE "point_logs" ADD COLUMN IF NOT EXISTS "imageUrl" TEXT`).catch(() => {});
+
+    // Add category to point_logs if missing
+    await prisma.$executeRawUnsafe(`DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'PointCategory') THEN CREATE TYPE "PointCategory" AS ENUM ('PERFORMANCE', 'REWARD'); END IF; END $$`).catch(() => {});
+    await prisma.$executeRawUnsafe(`ALTER TABLE "point_logs" ADD COLUMN IF NOT EXISTS "category" "PointCategory" NOT NULL DEFAULT 'PERFORMANCE'`).catch(() => {});
+
+    // Create notifications table if missing
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "notifications" (
+        "id" TEXT NOT NULL DEFAULT gen_random_uuid(),
+        "userId" TEXT NOT NULL,
+        "type" TEXT NOT NULL DEFAULT 'POINT_UPDATE',
+        "title" TEXT NOT NULL,
+        "message" TEXT NOT NULL,
+        "metadata" JSONB,
+        "read" BOOLEAN NOT NULL DEFAULT false,
+        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT "notifications_pkey" PRIMARY KEY ("id"),
+        CONSTRAINT "notifications_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE
+      )
+    `).catch(() => {});
+    await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "notifications_userId_read_createdAt_idx" ON "notifications"("userId", "read", "createdAt" DESC)`).catch(() => {});
+    await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "notifications_userId_createdAt_idx" ON "notifications"("userId", "createdAt" DESC)`).catch(() => {});
 
     console.log('Schema migration complete');
   } catch (err) {

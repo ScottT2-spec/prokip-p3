@@ -4,6 +4,7 @@ const prisma = require('../config/db');
 const { authenticate, authorize } = require('../middleware/auth');
 const { calculateGrade } = require('../utils/gradeCalculator');
 const { sendPointChangeEmail, sendPlatinumHighFive } = require('../services/emailService');
+const { pushToUser } = require('./notifications');
 const upload = require('../middleware/upload');
 
 const router = express.Router();
@@ -83,12 +84,41 @@ router.post('/', authenticate, authorize('ADMIN', 'LEAD'), upload.single('image'
       }),
     ]);
 
-    // Send point change email
-    sendPointChangeEmail(updatedUser, pointValue, newTotal, reason, req.user);
+    // Create in-app notification
+    const isHighFive = newGrade === 'A_PLUS' && previousGrade !== 'A_PLUS';
+    const notifTitle = isHighFive
+      ? '🖐 Platinum High-Five!'
+      : pointValue > 0
+        ? `+${pointValue} Points Awarded`
+        : `${pointValue} Points Deducted`;
+    const notifMessage = isHighFive
+      ? `You've hit the A+ Tier with ${newTotal} points! ${reason}`
+      : `${pointCategory === 'REWARD' ? '🌟 Reward' : '⚙️ Performance'}: ${reason}`;
 
-    // Send Platinum High-Five if crossed into A+
-    if (newGrade === 'A_PLUS' && previousGrade !== 'A_PLUS') {
+    const notification = await prisma.notification.create({
+      data: {
+        userId,
+        type: isHighFive ? 'PLATINUM_HIGH_FIVE' : 'POINT_UPDATE',
+        title: notifTitle,
+        message: notifMessage,
+        metadata: {
+          points: pointValue,
+          category: pointCategory,
+          reason,
+          newTotal,
+          givenBy: `${req.user.firstName} ${req.user.lastName}`,
+        },
+      },
+    });
+
+    // Push real-time via SSE
+    pushToUser(userId, notification);
+
+    // Send email — Platinum High-Five or standard alert
+    if (isHighFive) {
       sendPlatinumHighFive(updatedUser, newTotal);
+    } else {
+      sendPointChangeEmail(updatedUser, pointValue, newTotal, reason, req.user, pointCategory);
     }
 
     const { password: _, ...userWithoutPassword } = updatedUser;
