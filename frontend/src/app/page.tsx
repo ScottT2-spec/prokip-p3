@@ -392,7 +392,7 @@ export default function Dashboard() {
           <div className="card">
             <h3 className="text-lg font-semibold text-prokip-navy mb-4">Recent Activity</h3>
             <div className="space-y-3">
-              {adminData.recentActivity.slice(0, 10).map((activity) => (
+              {adminData.recentActivity.slice(0, 5).map((activity) => (
                 <div key={activity.id} className="flex items-center gap-4 p-3 border border-gray-100 rounded-lg">
                   <div className="flex-shrink-0">
                     <Clock className="w-5 h-5 text-gray-400" />
