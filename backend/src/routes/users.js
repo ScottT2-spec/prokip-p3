@@ -35,6 +35,16 @@ router.get('/', authenticate, authorize('ADMIN', 'LEAD'), async (req, res) => {
       where.grade = grade;
     }
 
+    const { sortBy = 'points', sortOrder = 'desc' } = req.query;
+
+    // Determine orderBy based on sortBy param (reward_points sorted client-side)
+    let orderBy = { points: 'desc' };
+    if (sortBy === 'points') {
+      orderBy = { points: sortOrder === 'asc' ? 'asc' : 'desc' };
+    } else if (sortBy === 'firstName') {
+      orderBy = { firstName: sortOrder === 'asc' ? 'asc' : 'desc' };
+    }
+
     const [users, total] = await Promise.all([
       prisma.user.findMany({
         where,
@@ -49,14 +59,44 @@ router.get('/', authenticate, authorize('ADMIN', 'LEAD'), async (req, res) => {
           department: true,
           createdAt: true,
         },
-        orderBy: { points: 'desc' },
+        orderBy,
         skip: (page - 1) * limit,
         take: parseInt(limit),
       }),
       prisma.user.count({ where }),
     ]);
 
-    res.json({ users, total, page: parseInt(page), limit: parseInt(limit) });
+    // Aggregate reward points (positive points only) for each user
+    const userIds = users.map(u => u.id);
+    let rewardPointsMap = {};
+    if (userIds.length > 0) {
+      const rewardAggregates = await prisma.pointLog.groupBy({
+        by: ['userId'],
+        where: {
+          userId: { in: userIds },
+          points: { gt: 0 },
+        },
+        _sum: { points: true },
+      });
+      rewardPointsMap = Object.fromEntries(
+        rewardAggregates.map(r => [r.userId, r._sum.points || 0])
+      );
+    }
+
+    const usersWithRewards = users.map(u => ({
+      ...u,
+      rewardPoints: rewardPointsMap[u.id] || 0,
+    }));
+
+    // Sort by reward points if requested
+    if (sortBy === 'rewardPoints') {
+      usersWithRewards.sort((a, b) => {
+        const diff = sortOrder === 'asc' ? a.rewardPoints - b.rewardPoints : b.rewardPoints - a.rewardPoints;
+        return diff !== 0 ? diff : b.points - a.points; // tie-break by total points
+      });
+    }
+
+    res.json({ users: usersWithRewards, total, page: parseInt(page), limit: parseInt(limit) });
   } catch (error) {
     console.error('List users error:', error);
     res.status(500).json({ error: 'Server error.' });

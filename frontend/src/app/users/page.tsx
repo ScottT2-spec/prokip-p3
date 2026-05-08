@@ -8,7 +8,7 @@ import AppShell from "@/components/AppShell";
 import GradeBadge from "@/components/GradeBadge";
 import Modal from "@/components/Modal";
 import { TableSkeleton } from "@/components/LoadingSkeleton";
-import { Search, Plus, Eye } from "lucide-react";
+import { Search, Plus, Eye, Star, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 
@@ -28,11 +28,12 @@ export default function UsersPage() {
   const [addUserOpen, setAddUserOpen] = useState(false);
   const [createLoading, setCreateLoading] = useState(false);
   
-  // Filters
+  // Filters & sorting
   const [searchTerm, setSearchTerm] = useState("");
   const [departmentFilter, setDepartmentFilter] = useState("");
   const [gradeFilter, setGradeFilter] = useState("");
   const [page, setPage] = useState(1);
+  const [rewardSort, setRewardSort] = useState<"none" | "desc" | "asc">("none");
 
   // Add user form
   const [newUser, setNewUser] = useState({
@@ -51,7 +52,7 @@ export default function UsersPage() {
     }
     loadUsers();
     loadDepartments();
-  }, [user, searchTerm, departmentFilter, gradeFilter, page, router]);
+  }, [user, searchTerm, departmentFilter, gradeFilter, page, rewardSort, router]);
 
   const loadUsers = async () => {
     try {
@@ -60,7 +61,8 @@ export default function UsersPage() {
         limit: "20",
         search: searchTerm,
         department: departmentFilter,
-        grade: gradeFilter
+        grade: gradeFilter,
+        ...(rewardSort !== "none" ? { sortBy: "rewardPoints", sortOrder: rewardSort } : {}),
       });
       const response = await api.get(`/api/users?${params}`);
       setData(response.data);
@@ -199,6 +201,22 @@ export default function UsersPage() {
                     <th className="text-left py-3 px-2 font-semibold text-prokip-navy">Department</th>
                     <th className="text-left py-3 px-2 font-semibold text-prokip-navy">Role</th>
                     <th className="text-right py-3 px-2 font-semibold text-prokip-navy">Points</th>
+                    <th
+                      className="text-right py-3 px-2 font-semibold text-prokip-navy cursor-pointer select-none hover:text-prokip-gold transition-colors"
+                      onClick={() => {
+                        setRewardSort(prev =>
+                          prev === "none" ? "desc" : prev === "desc" ? "asc" : "none"
+                        );
+                      }}
+                    >
+                      <span className="inline-flex items-center gap-1">
+                        <Star className="w-3.5 h-3.5 text-prokip-gold" />
+                        Reward Pts
+                        {rewardSort === "none" && <ArrowUpDown className="w-3.5 h-3.5 text-gray-400" />}
+                        {rewardSort === "desc" && <ArrowDown className="w-3.5 h-3.5 text-prokip-gold" />}
+                        {rewardSort === "asc" && <ArrowUp className="w-3.5 h-3.5 text-prokip-gold" />}
+                      </span>
+                    </th>
                     <th className="text-left py-3 px-2 font-semibold text-prokip-navy">Grade</th>
                     <th className="text-center py-3 px-2 font-semibold text-prokip-navy">Actions</th>
                   </tr>
@@ -236,6 +254,18 @@ export default function UsersPage() {
                         ) : (
                           <span className={`font-semibold ${userData.points >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                             {userData.points}
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-3 px-2 text-right">
+                        {userData.role === "ADMIN" ? (
+                          <span className="text-gray-400">—</span>
+                        ) : (
+                          <span className={`font-semibold inline-flex items-center gap-1 ${
+                            userData.points > 104 ? 'text-prokip-gold' : 'text-prokip-navy'
+                          }`}>
+                            {userData.points > 104 && <Star className="w-3.5 h-3.5 fill-prokip-gold text-prokip-gold" />}
+                            {(userData as any).rewardPoints ?? 0}
                           </span>
                         )}
                       </td>
