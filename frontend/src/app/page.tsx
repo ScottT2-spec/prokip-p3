@@ -30,11 +30,8 @@ export default function Dashboard() {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [page, setPage] = useState(1);
 
-  // Member dashboard tabs & ledger state
-  const [memberTab, setMemberTab] = useState<"overview" | "ledger" | "policies">("overview");
-  const [ledgerData, setLedgerData] = useState<{ logs: PointLog[]; total: number }>({ logs: [], total: 0 });
-  const [ledgerPage, setLedgerPage] = useState(1);
-  const [ledgerLoading, setLedgerLoading] = useState(false);
+  // Member dashboard tabs
+  const [memberTab, setMemberTab] = useState<"overview" | "policies">("overview");
   const [memberRewardPolicies, setMemberRewardPolicies] = useState<RewardPolicy[]>([]);
 
   useEffect(() => {
@@ -44,13 +41,6 @@ export default function Dashboard() {
       loadDepartments();
     }
   }, [user, searchTerm, departmentFilter, gradeFilter, page]);
-
-  // Load ledger data when tab switches to ledger
-  useEffect(() => {
-    if (memberTab === "ledger" && user && user.role !== "ADMIN" && user.role !== "LEAD") {
-      loadLedger();
-    }
-  }, [memberTab, ledgerPage, user]);
 
   // Load reward policies when policies tab is active
   useEffect(() => {
@@ -65,19 +55,6 @@ export default function Dashboard() {
       setMemberRewardPolicies(response.data.rewards || []);
     } catch (error) {
       console.error("Failed to load reward policies");
-    }
-  };
-
-  const loadLedger = async () => {
-    if (!user) return;
-    setLedgerLoading(true);
-    try {
-      const response = await api.get(`/api/points/history/${user.id}?page=${ledgerPage}&limit=20`);
-      setLedgerData(response.data);
-    } catch (error) {
-      toast.error("Failed to load ledger");
-    } finally {
-      setLedgerLoading(false);
     }
   };
 
@@ -464,7 +441,6 @@ export default function Dashboard() {
 
   const memberTabs = [
     { key: "overview" as const, label: "Overview", icon: Target },
-    { key: "ledger" as const, label: "Ledger", icon: BookOpen },
     { key: "policies" as const, label: "Policies & Rewards", icon: Shield },
   ];
 
@@ -646,114 +622,11 @@ export default function Dashboard() {
               </div>
               {memberData.recentLogs.length > 0 && (
                 <button
-                  onClick={() => setMemberTab("ledger")}
+                  onClick={() => router.push("/history")}
                   className="mt-4 text-sm font-medium text-prokip-navy hover:underline"
                 >
-                  View Full Ledger →
+                  See Full History →
                 </button>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* ========== LEDGER TAB ========== */}
-        {memberTab === "ledger" && (
-          <div className="space-y-6">
-            {/* Summary Row */}
-            <div className="flex gap-4">
-              <div className="card flex-1 text-center">
-                <p className="text-sm text-gray-500">Total Earned</p>
-                <p className="text-2xl font-bold text-green-600">+{memberData.totalAdded}</p>
-              </div>
-              <div className="card flex-1 text-center">
-                <p className="text-sm text-gray-500">Total Deducted</p>
-                <p className="text-2xl font-bold text-red-600">-{memberData.totalDeducted}</p>
-              </div>
-              <div className="card flex-1 text-center">
-                <p className="text-sm text-gray-500">Net Balance</p>
-                <p className={`text-2xl font-bold ${memberData.points >= 0 ? "text-prokip-navy" : "text-red-600"}`}>
-                  {memberData.points}
-                </p>
-              </div>
-            </div>
-
-            {/* Transaction Table */}
-            <div className="card">
-              <h3 className="text-lg font-semibold text-prokip-navy mb-4">All Transactions</h3>
-              {ledgerLoading ? (
-                <div className="py-12 text-center text-gray-400">Loading...</div>
-              ) : (
-                <>
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="border-b border-gray-200">
-                          <th className="text-left py-3 px-2 font-semibold text-prokip-navy text-sm">Date</th>
-                          <th className="text-right py-3 px-2 font-semibold text-prokip-navy text-sm">Points</th>
-                          <th className="text-left py-3 px-2 font-semibold text-prokip-navy text-sm">Reason</th>
-                          <th className="text-left py-3 px-2 font-semibold text-prokip-navy text-sm">Given By</th>
-                          <th className="text-left py-3 px-2 font-semibold text-prokip-navy text-sm">Policy</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {ledgerData.logs.map((log) => (
-                          <tr key={log.id} className="border-b border-gray-100 hover:bg-gray-50">
-                            <td className="py-3 px-2 text-sm text-gray-600">
-                              {new Date(log.createdAt).toLocaleDateString()}
-                            </td>
-                            <td className={`py-3 px-2 text-sm text-right font-semibold ${log.points > 0 ? "text-green-600" : "text-red-600"}`}>
-                              {formatPoints(log.points)}
-                            </td>
-                            <td className="py-3 px-2 text-sm text-prokip-navy max-w-[200px] truncate">
-                              {log.reason}
-                            </td>
-                            <td className="py-3 px-2 text-sm text-gray-600">
-                              {log.givenBy ? `${log.givenBy.firstName} ${log.givenBy.lastName}` : "—"}
-                            </td>
-                            <td className="py-3 px-2 text-sm text-gray-500">
-                              {log.policy?.name || "—"}
-                            </td>
-                          </tr>
-                        ))}
-                        {ledgerData.logs.length === 0 && (
-                          <tr>
-                            <td colSpan={5} className="py-8 text-center text-gray-400">
-                              No transactions found
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  {/* Pagination */}
-                  {ledgerData.total > 20 && (
-                    <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
-                      <p className="text-sm text-gray-500">
-                        Showing {((ledgerPage - 1) * 20) + 1}–{Math.min(ledgerPage * 20, ledgerData.total)} of {ledgerData.total}
-                      </p>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => setLedgerPage(p => Math.max(1, p - 1))}
-                          disabled={ledgerPage === 1}
-                          className="p-2 rounded-lg border border-gray-200 disabled:opacity-30 hover:bg-gray-50"
-                        >
-                          <ChevronLeft className="w-4 h-4" />
-                        </button>
-                        <span className="flex items-center px-3 text-sm text-prokip-navy">
-                          Page {ledgerPage} of {Math.ceil(ledgerData.total / 20)}
-                        </span>
-                        <button
-                          onClick={() => setLedgerPage(p => p + 1)}
-                          disabled={ledgerPage >= Math.ceil(ledgerData.total / 20)}
-                          className="p-2 rounded-lg border border-gray-200 disabled:opacity-30 hover:bg-gray-50"
-                        >
-                          <ChevronRight className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </>
               )}
             </div>
           </div>
