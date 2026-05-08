@@ -16,7 +16,7 @@ import {
   Trophy,
   Medal,
   Upload,
-  Gift,
+
 } from "lucide-react";
 import GradeBadge from "./GradeBadge";
 import { useState } from "react";
@@ -26,8 +26,7 @@ const menuItems = [
   { href: "/users", label: "Users", icon: Users, roles: ["ADMIN", "LEAD"] },
   { href: "/policies", label: "Policies", icon: FileText, roles: ["ADMIN", "LEAD"] },
   { href: "/departments", label: "Departments", icon: Building2, roles: ["ADMIN"] },
-  { href: "/grades", label: "Grades", icon: Trophy, roles: ["ADMIN", "LEAD", "MEMBER"] },
-  { href: "/rewards", label: "Policies & Rewards", icon: Gift, roles: ["ADMIN", "LEAD"] },
+  { href: "/grades", label: "Grades & Rewards", icon: Trophy, roles: ["ADMIN", "LEAD", "MEMBER"] },
   { href: "/leaderboard", label: "Leaderboard", icon: Medal, roles: ["ADMIN", "LEAD", "MEMBER"] },
   { href: "/bulk-upload", label: "Bulk Upload", icon: Upload, roles: ["ADMIN", "LEAD"] },
 ];
