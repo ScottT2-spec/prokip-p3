@@ -368,9 +368,17 @@ export default function Dashboard() {
 
           {/* Recent Activity */}
           <div className="card">
-            <h3 className="text-lg font-semibold text-prokip-navy mb-4">Recent Activity</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-prokip-navy">Recent Activity</h3>
+              <button
+                onClick={() => router.push("/history")}
+                className="text-sm text-prokip-navy hover:underline font-medium"
+              >
+                See Full History →
+              </button>
+            </div>
             <div className="space-y-3">
-              {adminData.recentActivity.slice(0, 10).map((activity) => (
+              {adminData.recentActivity.slice(0, 5).map((activity) => (
                 <div key={activity.id} className="flex items-center gap-4 p-3 border border-gray-100 rounded-lg">
                   <div className="flex-shrink-0">
                     <Clock className="w-5 h-5 text-gray-400" />
@@ -496,7 +504,15 @@ export default function Dashboard() {
 
         {/* Recent Point History */}
         <div className="card">
-          <h3 className="text-lg font-semibold text-prokip-navy mb-6">Recent Point History</h3>
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-semibold text-prokip-navy">Recent Point History</h3>
+            <button
+              onClick={() => router.push("/history")}
+              className="text-sm text-prokip-navy hover:underline font-medium"
+            >
+              See Full History →
+            </button>
+          </div>
           <div className="space-y-3">
             {memberData.recentLogs.map((log) => (
               <div key={log.id} className="flex items-center justify-between p-4 border border-gray-100 rounded-lg">

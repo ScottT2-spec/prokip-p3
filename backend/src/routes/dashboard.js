@@ -95,7 +95,7 @@ router.get('/admin', authenticate, authorize('ADMIN', 'LEAD'), async (req, res) 
         take: 10,
       }),
 
-      // Recent activity — last 20
+      // Recent activity — last 5 (dashboard snapshot)
       prisma.pointLog.findMany({
         where: req.user.role === 'LEAD'
           ? { user: { departmentId: req.user.departmentId } }
@@ -106,7 +106,7 @@ router.get('/admin', authenticate, authorize('ADMIN', 'LEAD'), async (req, res) 
           policy: { select: { name: true } },
         },
         orderBy: { createdAt: 'desc' },
-        take: 20,
+        take: 5,
       }),
     ]);
 
@@ -148,7 +148,7 @@ router.get('/member', authenticate, async (req, res) => {
 
     const gradeInfo = await getGradeInfo(user.grade, user.departmentId);
 
-    // Recent point history
+    // Recent point history — last 5 (dashboard snapshot)
     const recentLogs = await prisma.pointLog.findMany({
       where: { userId: req.user.id },
       include: {
@@ -156,7 +156,7 @@ router.get('/member', authenticate, async (req, res) => {
         policy: { select: { name: true } },
       },
       orderBy: { createdAt: 'desc' },
-      take: 10,
+      take: 5,
     });
 
     // Points trend (last 30 days)
