@@ -4,6 +4,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import Sidebar from "./Sidebar";
+import NotificationBell from "./NotificationBell";
 import { PageSkeleton } from "./LoadingSkeleton";
 
 interface Props {
@@ -35,6 +36,13 @@ export default function AppShell({ children, title }: Props) {
     <div className="flex min-h-screen">
       <Sidebar />
       <main className="flex-1 min-w-0">
+        {/* Top Bar */}
+        <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-sm border-b border-gray-100">
+          <div className="flex items-center justify-end px-6 lg:px-8 py-3 max-w-[1400px] mx-auto">
+            <NotificationBell />
+          </div>
+        </div>
+
         <div className="p-6 lg:p-8 max-w-[1400px] mx-auto">
           {title && (
             <div className="mb-8">

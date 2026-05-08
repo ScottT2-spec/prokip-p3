@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
+import { NotificationProvider } from "@/context/NotificationContext";
 import { Toaster } from "react-hot-toast";
 
 export const metadata: Metadata = {
@@ -17,7 +18,9 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <AuthProvider>
+          <NotificationProvider>
           {children}
+          </NotificationProvider>
           <Toaster
             position="top-right"
             toastOptions={{

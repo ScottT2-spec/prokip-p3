@@ -26,8 +26,16 @@ function pushToUser(userId, notification) {
 
 /**
  * GET /api/notifications/stream - SSE endpoint
+ * Supports auth via Authorization header OR ?token= query param
+ * (EventSource API doesn't support custom headers)
  */
-router.get('/stream', authenticate, (req, res) => {
+router.get('/stream', (req, res, next) => {
+  // Allow token via query param for SSE (EventSource limitation)
+  if (!req.headers.authorization && req.query.token) {
+    req.headers.authorization = `Bearer ${req.query.token}`;
+  }
+  next();
+}, authenticate, (req, res) => {
   const userId = req.user.id;
 
   res.writeHead(200, {
