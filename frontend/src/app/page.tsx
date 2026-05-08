@@ -487,9 +487,9 @@ export default function Dashboard() {
                 </p>
               </div>
 
-              {/* Net Point Balance */}
+              {/* Performance */}
               <div className="card">
-                <p className="section-label mb-1">Net Balance</p>
+                <p className="section-label mb-1">Performance</p>
                 <p className={`text-3xl font-bold ${memberData.points >= 0 ? "text-prokip-navy" : "text-red-600"}`}>
                   {memberData.points}
                 </p>
