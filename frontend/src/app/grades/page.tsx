@@ -645,6 +645,11 @@ export default function GradesPage() {
             </div>
           )}
 
+          <div>
+            <label className="input-label">Consequence <span className="text-gray-400 font-normal">(what happens if in this grade)</span></label>
+            <textarea value={defForm.consequence} onChange={(e) => setDefForm(p => ({ ...p, consequence: e.target.value }))} className="input-field min-h-[70px] resize-none" placeholder="e.g. Mandatory training, loss of remote work..." />
+          </div>
+
           <div className="flex justify-end gap-3 pt-4">
             <button type="button" onClick={() => setDefModalOpen(false)} className="btn-secondary">Cancel</button>
             <button type="submit" disabled={saving} className="btn-primary">{saving ? "Saving..." : editingDef ? "Update" : "Create"}</button>
