@@ -32,6 +32,7 @@ export default function Dashboard() {
 
   // Member dashboard tabs
   const [memberTab, setMemberTab] = useState<"overview" | "policies">("overview");
+  const [leaderboardData, setLeaderboardData] = useState<User[]>([]);
   const [memberRewardPolicies, setMemberRewardPolicies] = useState<RewardPolicy[]>([]);
 
   useEffect(() => {
@@ -73,8 +74,12 @@ export default function Dashboard() {
         const response = await api.get(`/api/dashboard/admin?${params}`);
         setAdminData(response.data);
       } else {
-        const response = await api.get("/api/dashboard/member");
-        setMemberData(response.data);
+        const [dashRes, lbRes] = await Promise.all([
+          api.get("/api/dashboard/member"),
+          api.get("/api/leaderboard?limit=10"),
+        ]);
+        setMemberData(dashRes.data);
+        setLeaderboardData(lbRes.data.leaderboard || []);
       }
     } catch (error) {
       toast.error("Failed to load dashboard data");
@@ -578,37 +583,83 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* Section C: Recent Activity Mini-Feed */}
-            <div className="card">
-              <h3 className="text-lg font-semibold text-prokip-navy mb-4">Recent Activity</h3>
-              <div className="space-y-2">
-                {memberData.recentLogs.slice(0, 5).map((log) => (
-                  <div key={log.id} className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors">
-                    <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${log.points > 0 ? "bg-green-500" : "bg-red-500"}`} />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-prokip-navy truncate">{log.reason}</p>
-                      {log.policy && (
-                        <p className="text-xs text-gray-400">{log.policy.name}</p>
-                      )}
+            {/* Recent Activity (left) + Leaderboard (right) */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Left: Recent Activity */}
+              <div className="card">
+                <h3 className="text-lg font-semibold text-prokip-navy mb-4">Recent Activity</h3>
+                <div className="space-y-2">
+                  {memberData.recentLogs.slice(0, 5).map((log) => (
+                    <div key={log.id} className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors">
+                      <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${log.points > 0 ? "bg-green-500" : "bg-red-500"}`} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-prokip-navy truncate">{log.reason}</p>
+                        {log.policy && (
+                          <p className="text-xs text-gray-400">{log.policy.name}</p>
+                        )}
+                      </div>
+                      <span className={`font-semibold text-sm flex-shrink-0 ${log.points > 0 ? "text-green-600" : "text-red-600"}`}>
+                        {formatPoints(log.points)}
+                      </span>
+                      <span className="text-xs text-gray-400 flex-shrink-0 w-16 text-right">{formatDate(log.createdAt)}</span>
                     </div>
-                    <span className={`font-semibold text-sm flex-shrink-0 ${log.points > 0 ? "text-green-600" : "text-red-600"}`}>
-                      {formatPoints(log.points)}
-                    </span>
-                    <span className="text-xs text-gray-400 flex-shrink-0 w-16 text-right">{formatDate(log.createdAt)}</span>
-                  </div>
-                ))}
-                {memberData.recentLogs.length === 0 && (
-                  <p className="text-gray-500 text-center py-6">No activity yet</p>
+                  ))}
+                  {memberData.recentLogs.length === 0 && (
+                    <p className="text-gray-500 text-center py-6">No activity yet</p>
+                  )}
+                </div>
+                {memberData.recentLogs.length > 0 && (
+                  <button
+                    onClick={() => router.push("/history")}
+                    className="mt-4 text-sm font-medium text-prokip-navy hover:underline"
+                  >
+                    See Full History →
+                  </button>
                 )}
               </div>
-              {memberData.recentLogs.length > 0 && (
-                <button
-                  onClick={() => router.push("/history")}
-                  className="mt-4 text-sm font-medium text-prokip-navy hover:underline"
-                >
-                  See Full History →
-                </button>
-              )}
+
+              {/* Right: Leaderboard */}
+              <div className="card">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-prokip-navy">Leaderboard</h3>
+                  <button
+                    onClick={() => router.push("/leaderboard")}
+                    className="text-sm text-prokip-navy hover:underline font-medium"
+                  >
+                    View All →
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  {leaderboardData.map((entry, index) => (
+                    <div
+                      key={entry.id}
+                      className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${
+                        entry.id === user?.id ? "bg-prokip-gold/10 border border-prokip-gold/30" : "hover:bg-gray-50"
+                      }`}
+                    >
+                      <span className={`w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold flex-shrink-0 ${
+                        index === 0 ? "bg-yellow-100 text-yellow-700" :
+                        index === 1 ? "bg-gray-200 text-gray-600" :
+                        index === 2 ? "bg-orange-100 text-orange-700" :
+                        "bg-gray-100 text-gray-500"
+                      }`}>
+                        {index + 1}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-prokip-navy truncate">
+                          {entry.firstName} {entry.lastName}
+                          {entry.id === user?.id && <span className="text-xs text-prokip-gold ml-1">(You)</span>}
+                        </p>
+                      </div>
+                      <GradeBadge grade={entry.grade} size="sm" />
+                      <span className="font-semibold text-sm text-prokip-navy flex-shrink-0">{entry.points} pts</span>
+                    </div>
+                  ))}
+                  {leaderboardData.length === 0 && (
+                    <p className="text-gray-500 text-center py-6">No leaderboard data</p>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         )}
