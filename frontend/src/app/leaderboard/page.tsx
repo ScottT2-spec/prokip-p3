@@ -5,7 +5,8 @@ import { useAuth } from "@/context/AuthContext";
 import api from "@/lib/api";
 import AppShell from "@/components/AppShell";
 import GradeBadge from "@/components/GradeBadge";
-import { Search, Trophy } from "lucide-react";
+import { Search, Trophy, ArrowLeft } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { Grade } from "@/lib/grades";
 
 interface LeaderboardEntry {
@@ -36,6 +37,7 @@ const RANK_MEDALS: Record<number, string> = { 1: "🥇", 2: "🥈", 3: "🥉" };
 
 export default function LeaderboardPage() {
   const { user } = useAuth();
+  const router = useRouter();
   const [data, setData] = useState<LeaderboardResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "department">("all");
@@ -76,6 +78,17 @@ export default function LeaderboardPage() {
   return (
     <AppShell title="Leaderboard">
       <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => router.back()}
+            className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5 text-prokip-navy" />
+          </button>
+          <h1 className="text-2xl font-bold text-prokip-navy">🏆 Leaderboard</h1>
+        </div>
+
         {/* Filters */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex gap-3">
