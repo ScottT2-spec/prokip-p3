@@ -102,14 +102,23 @@ app.listen(PORT, async () => {
     await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "notifications_userId_read_createdAt_idx" ON "notifications"("userId", "read", "createdAt" DESC)`).catch(() => {});
     await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "notifications_userId_createdAt_idx" ON "notifications"("userId", "createdAt" DESC)`).catch(() => {});
 
-    // Create reward_policies table
+    // Create RewardType enum if missing
+    await prisma.$executeRawUnsafe(`
+      DO $$ BEGIN
+        IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'RewardType') THEN
+          CREATE TYPE "RewardType" AS ENUM ('MONETARY', 'GROWTH', 'FLEXIBILITY', 'RECOGNITION', 'CONSEQUENCE');
+        END IF;
+      END $$
+    `).catch(() => {});
+
+    // Create reward_policies table with proper enum types
     await prisma.$executeRawUnsafe(`
       CREATE TABLE IF NOT EXISTS "reward_policies" (
         "id" TEXT NOT NULL DEFAULT gen_random_uuid(),
-        "grade" TEXT NOT NULL,
+        "grade" "Grade" NOT NULL,
         "title" TEXT NOT NULL,
         "description" TEXT NOT NULL,
-        "type" TEXT NOT NULL DEFAULT 'RECOGNITION',
+        "type" "RewardType" NOT NULL DEFAULT 'RECOGNITION'::"RewardType",
         "isActive" BOOLEAN NOT NULL DEFAULT true,
         "departmentId" TEXT,
         "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -118,6 +127,29 @@ app.listen(PORT, async () => {
         CONSTRAINT "reward_policies_departmentId_fkey" FOREIGN KEY ("departmentId") REFERENCES "departments"("id") ON DELETE SET NULL ON UPDATE CASCADE
       )
     `).catch(() => {});
+
+    // Fix existing reward_policies table if columns are TEXT instead of enum
+    await prisma.$executeRawUnsafe(`
+      DO $$ BEGIN
+        IF EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'reward_policies' AND column_name = 'grade' AND data_type = 'text'
+        ) THEN
+          ALTER TABLE "reward_policies" ALTER COLUMN "grade" TYPE "Grade" USING "grade"::"Grade";
+        END IF;
+        IF EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'reward_policies' AND column_name = 'type' AND data_type = 'text'
+        ) THEN
+          ALTER TABLE "reward_policies" ALTER COLUMN "type" TYPE "RewardType" USING "type"::"RewardType";
+          ALTER TABLE "reward_policies" ALTER COLUMN "type" SET DEFAULT 'RECOGNITION'::"RewardType";
+        END IF;
+      END $$
+    `).catch(() => {});
+
+    // Add indexes for reward_policies
+    await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "reward_policies_grade_idx" ON "reward_policies"("grade")`).catch(() => {});
+    await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "reward_policies_departmentId_idx" ON "reward_policies"("departmentId")`).catch(() => {});
 
     console.log('Schema migration complete');
   } catch (err) {
