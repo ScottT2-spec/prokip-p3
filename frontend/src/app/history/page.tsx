@@ -18,12 +18,24 @@ export default function HistoryPage() {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
+  const [totalAdded, setTotalAdded] = useState(0);
+  const [totalDeducted, setTotalDeducted] = useState(0);
+  const [categoryFilter, setCategoryFilter] = useState<"ALL" | "PERFORMANCE" | "REWARD">("ALL");
   const limit = 20;
 
   useEffect(() => {
     if (!user) return;
     loadHistory();
   }, [user, page]);
+
+  // Load aggregates once
+  useEffect(() => {
+    if (!user) return;
+    api.get("/api/dashboard/member").then((res) => {
+      setTotalAdded(res.data.totalAdded || 0);
+      setTotalDeducted(res.data.totalDeducted || 0);
+    }).catch(() => {});
+  }, [user]);
 
   const loadHistory = async () => {
     if (!user) return;
@@ -39,6 +51,10 @@ export default function HistoryPage() {
       setLoading(false);
     }
   };
+
+  const filteredLogs = categoryFilter === "ALL"
+    ? logs
+    : logs.filter((log) => log.category === categoryFilter);
 
   const totalPages = Math.ceil(total / limit);
 
@@ -67,6 +83,60 @@ export default function HistoryPage() {
               {total} {total === 1 ? "entry" : "entries"} total
             </p>
           </div>
+        </div>
+
+        {/* Aggregate Totals */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="card flex items-center gap-4">
+            <div className="p-3 bg-green-100 rounded-lg">
+              <ArrowLeft className="w-5 h-5 text-green-600 rotate-[135deg]" />
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Added</p>
+              <p className="text-2xl font-bold text-green-600">+{totalAdded}</p>
+            </div>
+          </div>
+          <div className="card flex items-center gap-4">
+            <div className="p-3 bg-red-100 rounded-lg">
+              <ArrowLeft className="w-5 h-5 text-red-600 rotate-[-45deg]" />
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Deducted</p>
+              <p className="text-2xl font-bold text-red-600">-{totalDeducted}</p>
+            </div>
+          </div>
+          <div className="card flex items-center gap-4">
+            <div className="p-3 bg-prokip-navy/10 rounded-lg">
+              <ExternalLink className="w-5 h-5 text-prokip-navy" />
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Net Balance</p>
+              <p className={`text-2xl font-bold ${totalAdded - totalDeducted >= 0 ? "text-prokip-navy" : "text-red-600"}`}>
+                {totalAdded - totalDeducted}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Filter */}
+        <div className="flex gap-1 bg-gray-100 rounded-lg p-1 w-fit">
+          {([
+            { key: "ALL" as const, label: "All" },
+            { key: "PERFORMANCE" as const, label: "Performance" },
+            { key: "REWARD" as const, label: "🌟 Reward" },
+          ]).map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setCategoryFilter(tab.key)}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                categoryFilter === tab.key
+                  ? "bg-white text-prokip-navy shadow-sm"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
 
         {/* History Table */}
@@ -99,7 +169,7 @@ export default function HistoryPage() {
                 </tr>
               </thead>
               <tbody>
-                {logs.map((log) => (
+                {filteredLogs.map((log) => (
                   <tr
                     key={log.id}
                     className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
@@ -177,7 +247,7 @@ export default function HistoryPage() {
               </tbody>
             </table>
 
-            {logs.length === 0 && (
+            {filteredLogs.length === 0 && (
               <div className="text-center py-8 text-gray-500">
                 No point history yet
               </div>
