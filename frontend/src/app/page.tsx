@@ -493,14 +493,35 @@ export default function Dashboard() {
                 </p>
               </div>
 
-              {/* Performance */}
+              {/* Performance Points */}
               <div className="card">
                 <p className="section-label mb-1">Performance</p>
-                <p className={`text-3xl font-bold ${(memberData.points - (memberData.rewardPoints || 0)) >= 0 ? "text-prokip-navy" : "text-red-600"}`}>
-                  {memberData.points - (memberData.rewardPoints || 0)}
+                <p className={`text-3xl font-bold ${(memberData.performancePoints ?? 0) >= 0 ? "text-prokip-navy" : "text-red-600"}`}>
+                  {memberData.performancePoints ?? 0}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">Performance-category total</p>
+              </div>
+
+              {/* Reward Points */}
+              <div className="card">
+                <div className="flex items-center gap-2 mb-1">
+                  <Star className="w-4 h-4" style={{ color: "#F5B731" }} />
+                  <p className="section-label">Reward Points</p>
+                </div>
+                <p className="text-3xl font-bold" style={{ color: "#F5B731" }}>
+                  {memberData.rewardPoints > 0 ? "+" : ""}{memberData.rewardPoints}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">Reward-category total</p>
+              </div>
+
+              {/* Net Point Balance */}
+              <div className="card">
+                <p className="section-label mb-1">Net Balance</p>
+                <p className={`text-3xl font-bold ${memberData.points >= 0 ? "text-prokip-navy" : "text-red-600"}`}>
+                  {memberData.points}
                 </p>
                 {memberData.nextGradeInfo && (
-                  <div className="mt-3">
+                  <div className="mt-2">
                     <div className="flex justify-between text-xs text-gray-500 mb-1">
                       <span>{memberData.gradeInfo.label}</span>
                       <span>{memberData.nextGradeInfo.label}</span>
@@ -517,20 +538,6 @@ export default function Dashboard() {
                   <p className="text-xs text-green-600 mt-2 font-medium">🏆 Max grade reached!</p>
                 )}
               </div>
-
-              {/* Reward Points */}
-              <div className="card">
-                <div className="flex items-center gap-2 mb-1">
-                  <Star className="w-4 h-4" style={{ color: "#F5B731" }} />
-                  <p className="section-label">Reward Points</p>
-                </div>
-                <p className="text-3xl font-bold" style={{ color: "#F5B731" }}>
-                  +{memberData.rewardPoints}
-                </p>
-                <p className="text-xs text-gray-500 mt-1">Total points earned</p>
-              </div>
-
-
             </div>
 
             {/* Section B: Progress to Next Grade */}

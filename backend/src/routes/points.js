@@ -142,11 +142,16 @@ router.get('/history/:userId', authenticate, async (req, res) => {
       return res.status(403).json({ error: 'Insufficient permissions.' });
     }
 
-    const { page = 1, limit = 20 } = req.query;
+    const { page = 1, limit = 20, category } = req.query;
 
-    const [logs, total] = await Promise.all([
+    const where = { userId: req.params.userId };
+    if (category && ['PERFORMANCE', 'REWARD'].includes(category)) {
+      where.category = category;
+    }
+
+    const [logs, total, addedAgg, deductedAgg] = await Promise.all([
       prisma.pointLog.findMany({
-        where: { userId: req.params.userId },
+        where,
         include: {
           givenBy: { select: { firstName: true, lastName: true } },
           policy: { select: { name: true, description: true } },
@@ -155,10 +160,59 @@ router.get('/history/:userId', authenticate, async (req, res) => {
         skip: (page - 1) * limit,
         take: parseInt(limit),
       }),
-      prisma.pointLog.count({ where: { userId: req.params.userId } }),
+      prisma.pointLog.count({ where }),
+      prisma.pointLog.aggregate({
+        where: { userId: req.params.userId, points: { gt: 0 } },
+        _sum: { points: true },
+      }),
+      prisma.pointLog.aggregate({
+        where: { userId: req.params.userId, points: { lt: 0 } },
+        _sum: { points: true },
+      }),
     ]);
 
-    res.json({ logs, total, page: parseInt(page), limit: parseInt(limit) });
+    // Calculate running balance for each log entry.
+    // We need ALL logs (chronological) up to the current page to compute balanceAfter.
+    // For efficiency: user.points is the current total. Walk backwards from page offset.
+    const targetUser = await prisma.user.findUnique({
+      where: { id: req.params.userId },
+      select: { points: true },
+    });
+    const currentTotal = targetUser ? targetUser.points : 0;
+
+    // Count how many points came AFTER the entries on this page
+    // (i.e., entries newer than our page, which is sorted desc)
+    const newerCount = (parseInt(page) - 1) * parseInt(limit);
+    let newerSum = 0;
+    if (newerCount > 0) {
+      const newerLogs = await prisma.pointLog.findMany({
+        where: { userId: req.params.userId },
+        select: { points: true },
+        orderBy: { createdAt: 'desc' },
+        take: newerCount,
+      });
+      newerSum = newerLogs.reduce((sum, l) => sum + l.points, 0);
+    }
+
+    // The balance AFTER the first entry on this page = currentTotal - newerSum
+    let runningBalance = currentTotal - newerSum;
+    const logsWithBalance = logs.map((log) => {
+      const balanceAfter = runningBalance;
+      runningBalance -= log.points; // walk backwards
+      return { ...log, balanceAfter };
+    });
+
+    const totalAdded = addedAgg._sum.points || 0;
+    const totalDeducted = Math.abs(deductedAgg._sum.points || 0);
+
+    res.json({
+      logs: logsWithBalance,
+      total,
+      page: parseInt(page),
+      limit: parseInt(limit),
+      totalAdded,
+      totalDeducted,
+    });
   } catch (error) {
     console.error('Point history error:', error);
     res.status(500).json({ error: 'Server error.' });

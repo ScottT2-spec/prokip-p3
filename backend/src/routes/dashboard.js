@@ -182,8 +182,8 @@ router.get('/member', authenticate, async (req, res) => {
         }) + 1
       : null;
 
-    // Point aggregations (reward points, total added, total deducted)
-    const [addedAgg, deductedAgg] = await Promise.all([
+    // Point aggregations (reward points, performance points, total added, total deducted)
+    const [addedAgg, deductedAgg, rewardAgg, performanceAgg] = await Promise.all([
       prisma.pointLog.aggregate({
         where: { userId: req.user.id, points: { gt: 0 } },
         _sum: { points: true },
@@ -192,9 +192,18 @@ router.get('/member', authenticate, async (req, res) => {
         where: { userId: req.user.id, points: { lt: 0 } },
         _sum: { points: true },
       }),
+      prisma.pointLog.aggregate({
+        where: { userId: req.user.id, category: 'REWARD' },
+        _sum: { points: true },
+      }),
+      prisma.pointLog.aggregate({
+        where: { userId: req.user.id, category: 'PERFORMANCE' },
+        _sum: { points: true },
+      }),
     ]);
 
-    const rewardPoints = addedAgg._sum.points || 0;
+    const rewardPoints = rewardAgg._sum.points || 0;
+    const performancePoints = performanceAgg._sum.points || 0;
     const totalAdded = addedAgg._sum.points || 0;
     const totalDeducted = Math.abs(deductedAgg._sum.points || 0);
 
@@ -245,6 +254,7 @@ router.get('/member', authenticate, async (req, res) => {
       pointsTrend,
       status: gradeInfo.consequence || gradeInfo.reward || 'Good standing',
       rewardPoints,
+      performancePoints,
       totalAdded,
       totalDeducted,
       nextGradeInfo,

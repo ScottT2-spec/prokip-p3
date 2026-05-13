@@ -42,6 +42,7 @@ export interface PointLog {
   reason: string;
   ticketLink?: string | null;
   imageUrl?: string | null;
+  balanceAfter?: number;
   createdAt: string;
   user?: { firstName: string; lastName: string };
   givenBy?: { firstName: string; lastName: string };
@@ -100,6 +101,7 @@ export interface RewardThreshold {
 
 export interface EnhancedMemberDashboard extends MemberDashboard {
   rewardPoints: number;
+  performancePoints: number;
   totalAdded: number;
   totalDeducted: number;
   nextGradeInfo: {
