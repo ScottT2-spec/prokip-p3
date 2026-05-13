@@ -27,7 +27,8 @@ function setCache(key, data) {
 
 /**
  * GET /api/leaderboard
- * Returns ranked leaderboard of non-admin users by reward (positive) points.
+ * Returns ranked leaderboard of non-admin users by REWARD-category points only.
+ * Tie-break: higher overall performance score (users.points) wins.
  * Query: department (ID), search (name), limit (default 50)
  */
 router.get('/', authenticate, async (req, res) => {
@@ -62,9 +63,9 @@ router.get('/', authenticate, async (req, res) => {
 
       const whereClause = userWhere.join(' AND ');
 
-      // Main leaderboard query:
-      // SUM positive points from point_logs, join user + department
-      // Tie-break: higher users.points wins
+      // Leaderboard query:
+      // Only count points where category = 'REWARD'
+      // Tie-break by total user points (overall performance), then name
       const query = `
         SELECT 
           u."id" AS "userId",
@@ -73,7 +74,7 @@ router.get('/', authenticate, async (req, res) => {
           u."points" AS "totalPoints",
           u."grade",
           d."name" AS "department",
-          COALESCE(SUM(CASE WHEN pl."points" > 0 THEN pl."points" ELSE 0 END), 0)::int AS "rewardPoints"
+          COALESCE(SUM(CASE WHEN pl."category" = 'REWARD' THEN pl."points" ELSE 0 END), 0)::int AS "rewardPoints"
         FROM "users" u
         LEFT JOIN "departments" d ON u."departmentId" = d."id"
         LEFT JOIN "point_logs" pl ON pl."userId" = u."id"
@@ -92,7 +93,6 @@ router.get('/', authenticate, async (req, res) => {
 
       for (let i = 0; i < rows.length; i++) {
         const row = rows[i];
-        // Convert BigInt to Number if needed
         const rewardPoints = Number(row.rewardPoints);
         const totalPoints = Number(row.totalPoints);
 
