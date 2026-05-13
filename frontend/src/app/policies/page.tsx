@@ -67,7 +67,7 @@ export default function PoliciesPage() {
         name: form.name.trim(),
         description: form.description.trim(),
         pointImpact: parseInt(form.pointImpact),
-        departmentId: form.departmentId || null
+        departmentId: user?.role === "LEAD" ? (user.departmentId || null) : (form.departmentId || null)
       };
 
       if (editingPolicy) {
@@ -382,21 +382,23 @@ export default function PoliciesPage() {
             </p>
           </div>
 
-          <div>
-            <label className="input-label">Scope</label>
-            <select
-              value={form.departmentId}
-              onChange={(e) => setForm(prev => ({ ...prev, departmentId: e.target.value }))}
-              className="input-field"
-            >
-              <option value="">Global (all departments)</option>
-              {departments.map((dept) => (
-                <option key={dept.id} value={dept.id}>
-                  {dept.name} only
-                </option>
-              ))}
-            </select>
-          </div>
+          {user?.role === "ADMIN" && (
+            <div>
+              <label className="input-label">Scope</label>
+              <select
+                value={form.departmentId}
+                onChange={(e) => setForm(prev => ({ ...prev, departmentId: e.target.value }))}
+                className="input-field"
+              >
+                <option value="">Global (all departments)</option>
+                {departments.map((dept) => (
+                  <option key={dept.id} value={dept.id}>
+                    {dept.name} only
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div className="flex justify-end gap-3 pt-4">
             <button
