@@ -282,7 +282,13 @@ export default function GradesPage() {
           <div>
             <h1 className="text-2xl font-bold text-prokip-navy">Grade System</h1>
             <p className="text-gray-600 mt-1">
-              Define grades and point thresholds.
+              Define grades, point thresholds, and rewards.{" "}
+              <button
+                onClick={() => router.push("/rewards")}
+                className="text-prokip-navy font-medium hover:underline"
+              >
+                Manage Policies & Rewards →
+              </button>
             </p>
           </div>
           {canManage && (
