@@ -8,9 +8,9 @@ import AppShell from "@/components/AppShell";
 import Modal from "@/components/Modal";
 import GradeBadge from "@/components/GradeBadge";
 import { PageSkeleton } from "@/components/LoadingSkeleton";
-import { Plus, Edit3, Trash2, Calendar, Gift, Award } from "lucide-react";
+import { Plus, Edit3, Trash2, Calendar, Gift } from "lucide-react";
 import { Grade, gradeOrder } from "@/lib/grades";
-import { Department, RewardPolicy, RewardPolicyType } from "@/lib/types";
+import { Department } from "@/lib/types";
 import toast from "react-hot-toast";
 
 interface GradeDefinition {
@@ -44,22 +44,6 @@ const GRADE_OPTIONS: { value: Grade; label: string }[] = [
   { value: "F", label: "F" },
 ];
 
-const REWARD_TYPE_OPTIONS: { value: RewardPolicyType; label: string }[] = [
-  { value: "MONETARY", label: "Monetary" },
-  { value: "GROWTH", label: "Growth" },
-  { value: "FLEXIBILITY", label: "Flexibility" },
-  { value: "RECOGNITION", label: "Recognition" },
-  { value: "CONSEQUENCE", label: "Consequence" },
-];
-
-const REWARD_TYPE_COLORS: Record<RewardPolicyType, { bg: string; text: string }> = {
-  MONETARY: { bg: "bg-green-100", text: "text-green-700" },
-  GROWTH: { bg: "bg-blue-100", text: "text-blue-700" },
-  FLEXIBILITY: { bg: "bg-purple-100", text: "text-purple-700" },
-  RECOGNITION: { bg: "bg-yellow-100", text: "text-yellow-700" },
-  CONSEQUENCE: { bg: "bg-red-100", text: "text-red-700" },
-};
-
 export default function GradesPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
@@ -71,20 +55,6 @@ export default function GradesPage() {
   const [activeQuarter, setActiveQuarter] = useState<Quarter | null>(null);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
-
-  // Reward policies
-  const [rewardPolicies, setRewardPolicies] = useState<RewardPolicy[]>([]);
-  const [rewardGradeFilter, setRewardGradeFilter] = useState<string>("all");
-  const [rewardTypeFilter, setRewardTypeFilter] = useState<string>("all");
-  const [rewardModalOpen, setRewardModalOpen] = useState(false);
-  const [editingReward, setEditingReward] = useState<RewardPolicy | null>(null);
-  const [rewardForm, setRewardForm] = useState({
-    grade: "A_PLUS" as Grade,
-    title: "",
-    description: "",
-    type: "RECOGNITION" as RewardPolicyType,
-    departmentId: "",
-  });
 
   // Filters
   const [selectedDept, setSelectedDept] = useState<string>("all");
@@ -125,11 +95,10 @@ export default function GradesPage() {
 
   const loadData = async () => {
     try {
-      const [defsRes, quartersRes, deptsRes, rewardsRes] = await Promise.all([
+      const [defsRes, quartersRes, deptsRes] = await Promise.all([
         api.get("/api/grades/definitions"),
         api.get("/api/grades/quarters"),
         api.get("/api/departments"),
-        api.get("/api/grades/rewards"),
       ]);
 
       setGlobalDefs(defsRes.data.global || []);
@@ -138,7 +107,6 @@ export default function GradesPage() {
       setQuarters(quartersRes.data.quarters || []);
       setActiveQuarter(quartersRes.data.activeQuarter);
       setDepartments(deptsRes.data.departments || []);
-      setRewardPolicies(rewardsRes.data.rewards || []);
     } catch (error) {
       toast.error("Failed to load grade data");
     } finally {
@@ -230,73 +198,6 @@ export default function GradesPage() {
     }
   };
 
-  // Reward policy handlers
-  const openNewReward = () => {
-    setEditingReward(null);
-    setRewardForm({
-      grade: "A_PLUS",
-      title: "",
-      description: "",
-      type: "RECOGNITION",
-      departmentId: user?.role === "LEAD" ? (user.departmentId || "") : "",
-    });
-    setRewardModalOpen(true);
-  };
-
-  const openEditReward = (reward: RewardPolicy) => {
-    setEditingReward(reward);
-    setRewardForm({
-      grade: reward.grade,
-      title: reward.title,
-      description: reward.description,
-      type: reward.type,
-      departmentId: reward.departmentId || "",
-    });
-    setRewardModalOpen(true);
-  };
-
-  const handleSaveReward = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSaving(true);
-    try {
-      const payload = {
-        ...rewardForm,
-        departmentId: rewardForm.departmentId || null,
-      };
-      if (editingReward) {
-        await api.put(`/api/grades/rewards/${editingReward.id}`, payload);
-        toast.success("Reward policy updated");
-      } else {
-        await api.post("/api/grades/rewards", payload);
-        toast.success("Reward policy created");
-      }
-      setRewardModalOpen(false);
-      loadData();
-    } catch (error: any) {
-      toast.error(error.response?.data?.error || "Failed to save reward policy");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleDeleteReward = async (id: string) => {
-    if (!confirm("Delete this reward policy?")) return;
-    try {
-      await api.delete(`/api/grades/rewards/${id}`);
-      toast.success("Reward policy deleted");
-      loadData();
-    } catch (error: any) {
-      toast.error(error.response?.data?.error || "Failed to delete");
-    }
-  };
-
-  // Filtered reward policies
-  const filteredRewards = rewardPolicies.filter((r) => {
-    if (rewardGradeFilter !== "all" && r.grade !== rewardGradeFilter) return false;
-    if (rewardTypeFilter !== "all" && r.type !== rewardTypeFilter) return false;
-    return true;
-  });
-
   const renderDefTable = (defs: GradeDefinition[], title: string, isDept = false) => {
     const sorted = [...defs].sort((a, b) => {
       const aIdx = gradeOrder.indexOf(a.grade);
@@ -364,6 +265,13 @@ export default function GradesPage() {
     );
   };
 
+  // Build reward table data from all definitions (global + department)
+  const allDefsForRewards = [...definitions].sort((a, b) => {
+    const aIdx = gradeOrder.indexOf(a.grade);
+    const bIdx = gradeOrder.indexOf(b.grade);
+    return aIdx - bIdx;
+  });
+
   if (loading || authLoading) return <AppShell><PageSkeleton /></AppShell>;
 
   return (
@@ -374,13 +282,7 @@ export default function GradesPage() {
           <div>
             <h1 className="text-2xl font-bold text-prokip-navy">Grade System</h1>
             <p className="text-gray-600 mt-1">
-              Define grades and point thresholds.{" "}
-              <button
-                onClick={() => router.push("/rewards")}
-                className="text-prokip-navy font-medium hover:underline"
-              >
-                Manage Policies & Rewards →
-              </button>
+              Define grades, point thresholds, and rewards.
             </p>
           </div>
           {canManage && (
@@ -450,98 +352,49 @@ export default function GradesPage() {
         }
 
         {/* ============================================================ */}
-        {/* REWARDS & CONSEQUENCES DATATABLE */}
+        {/* REWARDS DATATABLE */}
         {/* ============================================================ */}
         <div className="card">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-            <div className="flex items-center gap-3">
-              <Gift className="w-5 h-5 text-prokip-gold" />
-              <h3 className="text-lg font-semibold text-prokip-navy">Rewards & Consequences</h3>
-            </div>
-            {canManage && (
-              <button onClick={openNewReward} className="btn-primary flex items-center gap-2 text-sm">
-                <Plus className="w-4 h-4" /> Add Reward
-              </button>
-            )}
+          <div className="flex items-center gap-3 mb-4">
+            <Gift className="w-5 h-5 text-prokip-gold" />
+            <h3 className="text-lg font-semibold text-prokip-navy">Rewards</h3>
           </div>
 
-          {/* Filter Bar */}
-          <div className="flex flex-wrap items-center gap-3 mb-4">
-            <select
-              value={rewardGradeFilter}
-              onChange={(e) => setRewardGradeFilter(e.target.value)}
-              className="input-field max-w-[140px] text-sm"
-            >
-              <option value="all">All Grades</option>
-              {GRADE_OPTIONS.map((g) => (
-                <option key={g.value} value={g.value}>{g.label}</option>
-              ))}
-            </select>
-            <select
-              value={rewardTypeFilter}
-              onChange={(e) => setRewardTypeFilter(e.target.value)}
-              className="input-field max-w-[160px] text-sm"
-            >
-              <option value="all">All Types</option>
-              {REWARD_TYPE_OPTIONS.map((t) => (
-                <option key={t.value} value={t.value}>{t.label}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Data Table */}
-          {filteredRewards.length > 0 ? (
+          {allDefsForRewards.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-gray-200">
-                    <th className="text-left py-3 px-3 font-semibold text-prokip-navy text-sm">Grade</th>
-                    <th className="text-left py-3 px-3 font-semibold text-prokip-navy text-sm">Title</th>
-                    <th className="text-left py-3 px-3 font-semibold text-prokip-navy text-sm">Description</th>
-                    <th className="text-left py-3 px-3 font-semibold text-prokip-navy text-sm">Type</th>
-                    {canManage && <th className="text-right py-3 px-3 font-semibold text-prokip-navy text-sm">Actions</th>}
+                    <th className="text-left py-3 px-3 font-semibold text-prokip-navy text-sm">Name</th>
+                    <th className="text-left py-3 px-3 font-semibold text-prokip-navy text-sm">Point Range</th>
+                    <th className="text-left py-3 px-3 font-semibold text-prokip-navy text-sm">Reward</th>
+                    <th className="text-left py-3 px-3 font-semibold text-prokip-navy text-sm">Department</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredRewards.map((reward) => {
-                    const typeColor = REWARD_TYPE_COLORS[reward.type];
-                    return (
-                      <tr key={reward.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                        <td className="py-3 px-3">
-                          <GradeBadge grade={reward.grade} size="sm" />
-                        </td>
-                        <td className="py-3 px-3 text-sm font-medium text-prokip-navy">
-                          {reward.title}
-                        </td>
-                        <td className="py-3 px-3 text-sm text-gray-600 max-w-[300px]">
-                          {reward.description}
-                        </td>
-                        <td className="py-3 px-3">
-                          <span className={`px-2.5 py-1 text-xs font-semibold rounded-full ${typeColor.bg} ${typeColor.text}`}>
-                            {reward.type}
-                          </span>
-                        </td>
-                        {canManage && (
-                          <td className="py-3 px-3 text-right">
-                            <div className="flex items-center justify-end gap-2">
-                              <button
-                                onClick={() => openEditReward(reward)}
-                                className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-prokip-navy transition-colors"
-                              >
-                                <Edit3 className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={() => handleDeleteReward(reward.id)}
-                                className="p-1.5 rounded-lg hover:bg-red-50 text-gray-500 hover:text-red-600 transition-colors"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </div>
-                          </td>
+                  {allDefsForRewards.map((def) => (
+                    <tr key={def.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                      <td className="py-3 px-3">
+                        <div className="flex items-center gap-2">
+                          <GradeBadge grade={def.grade} size="sm" />
+                          <span className="text-sm font-medium text-prokip-navy">{def.title}</span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-3 text-sm font-mono text-prokip-navy">
+                        {def.minPoints} – {def.maxPoints ?? "∞"}
+                      </td>
+                      <td className="py-3 px-3 text-sm text-gray-600 max-w-[300px]">
+                        {def.reward || (
+                          <span className="text-gray-400 italic">Not defined</span>
                         )}
-                      </tr>
-                    );
-                  })}
+                      </td>
+                      <td className="py-3 px-3 text-sm text-gray-600">
+                        {def.department?.name || (
+                          <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-gray-100 text-gray-600">Global</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
@@ -549,12 +402,7 @@ export default function GradesPage() {
             <div className="text-center py-12 text-gray-400">
               <Gift className="w-10 h-10 mx-auto mb-3 opacity-50" />
               <p className="text-lg mb-2">No rewards defined yet</p>
-              <p className="text-sm mb-4">Add rewards to motivate your team!</p>
-              {canManage && (
-                <button onClick={openNewReward} className="btn-primary text-sm inline-flex items-center gap-2">
-                  <Plus className="w-4 h-4" /> Add Reward
-                </button>
-              )}
+              <p className="text-sm">Add grade definitions above to see rewards here.</p>
             </div>
           )}
         </div>
@@ -635,6 +483,11 @@ export default function GradesPage() {
             <input type="text" value={defForm.description} onChange={(e) => setDefForm(p => ({ ...p, description: e.target.value }))} className="input-field" placeholder="e.g. Elite Performance" required />
           </div>
 
+          <div>
+            <label className="input-label">Reward <span className="text-gray-400 font-normal">(what they earn at this grade)</span></label>
+            <textarea value={defForm.reward} onChange={(e) => setDefForm(p => ({ ...p, reward: e.target.value }))} className="input-field min-h-[70px] resize-none" placeholder="e.g. Quarterly bonus, extra PTO..." />
+          </div>
+
           {user?.role === "ADMIN" && (
             <div>
               <label className="input-label">Department <span className="text-gray-400 font-normal">(empty = global)</span></label>
@@ -645,59 +498,9 @@ export default function GradesPage() {
             </div>
           )}
 
-          <div>
-            <label className="input-label">Consequence <span className="text-gray-400 font-normal">(what happens if in this grade)</span></label>
-            <textarea value={defForm.consequence} onChange={(e) => setDefForm(p => ({ ...p, consequence: e.target.value }))} className="input-field min-h-[70px] resize-none" placeholder="e.g. Mandatory training, loss of remote work..." />
-          </div>
-
           <div className="flex justify-end gap-3 pt-4">
             <button type="button" onClick={() => setDefModalOpen(false)} className="btn-secondary">Cancel</button>
             <button type="submit" disabled={saving} className="btn-primary">{saving ? "Saving..." : editingDef ? "Update" : "Create"}</button>
-          </div>
-        </form>
-      </Modal>
-
-      {/* Reward Policy Modal */}
-      <Modal open={rewardModalOpen} onClose={() => setRewardModalOpen(false)} title={editingReward ? "Edit Reward Policy" : "Add Reward Policy"} maxWidth="max-w-xl">
-        <form onSubmit={handleSaveReward} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="input-label">Grade *</label>
-              <select value={rewardForm.grade} onChange={(e) => setRewardForm(p => ({ ...p, grade: e.target.value as Grade }))} className="input-field" required>
-                {GRADE_OPTIONS.map(g => <option key={g.value} value={g.value}>{g.label}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="input-label">Type *</label>
-              <select value={rewardForm.type} onChange={(e) => setRewardForm(p => ({ ...p, type: e.target.value as RewardPolicyType }))} className="input-field" required>
-                {REWARD_TYPE_OPTIONS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label className="input-label">Title *</label>
-            <input type="text" value={rewardForm.title} onChange={(e) => setRewardForm(p => ({ ...p, title: e.target.value }))} className="input-field" placeholder="e.g. Quarterly Bonus" required />
-          </div>
-
-          <div>
-            <label className="input-label">Description *</label>
-            <textarea value={rewardForm.description} onChange={(e) => setRewardForm(p => ({ ...p, description: e.target.value }))} className="input-field min-h-[80px] resize-none" placeholder="Describe this reward or consequence..." required />
-          </div>
-
-          {user?.role === "ADMIN" && (
-            <div>
-              <label className="input-label">Department <span className="text-gray-400 font-normal">(empty = global)</span></label>
-              <select value={rewardForm.departmentId} onChange={(e) => setRewardForm(p => ({ ...p, departmentId: e.target.value }))} className="input-field">
-                <option value="">Global (all departments)</option>
-                {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-              </select>
-            </div>
-          )}
-
-          <div className="flex justify-end gap-3 pt-4">
-            <button type="button" onClick={() => setRewardModalOpen(false)} className="btn-secondary">Cancel</button>
-            <button type="submit" disabled={saving} className="btn-primary">{saving ? "Saving..." : editingReward ? "Update" : "Create"}</button>
           </div>
         </form>
       </Modal>
