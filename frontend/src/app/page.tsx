@@ -452,10 +452,17 @@ export default function Dashboard() {
               {/* Performance Points */}
               <div className="card">
                 <p className="section-label mb-1">Performance</p>
-                <p className={`text-3xl font-bold ${(memberData.performancePoints ?? 0) >= 0 ? "text-prokip-navy" : "text-red-600"}`}>
-                  {memberData.performancePoints ?? 0}
-                </p>
-                <p className="text-xs text-gray-500 mt-1">Performance-category total</p>
+                {(() => {
+                  const perfScore = memberData.points - memberData.rewardPoints;
+                  return (
+                    <>
+                      <p className={`text-3xl font-bold ${perfScore >= 100 ? "text-green-600" : perfScore >= 0 ? "text-prokip-navy" : "text-red-600"}`}>
+                        {perfScore}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">Current performance score</p>
+                    </>
+                  );
+                })()}
               </div>
 
               {/* Reward Points */}
