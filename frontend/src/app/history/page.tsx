@@ -135,7 +135,7 @@ export default function HistoryPage() {
                     Category
                   </th>
                   <th className="text-left py-3 px-3 font-semibold text-prokip-navy text-sm">
-                    Policy
+                    Activity Type
                   </th>
                   <th className="text-left py-3 px-3 font-semibold text-prokip-navy text-sm">
                     Points
@@ -180,8 +180,16 @@ export default function HistoryPage() {
                         </span>
                       )}
                     </td>
-                    <td className="py-3 px-3 text-gray-600 text-sm">
-                      {log.policy?.name || "—"}
+                    <td className="py-3 px-3">
+                      {log.points > 0 ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-full bg-green-50 text-green-700 border border-green-200">
+                          Addition
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-full bg-red-50 text-red-700 border border-red-200">
+                          Deduction
+                        </span>
+                      )}
                     </td>
                     <td className="py-3 px-3">
                       <span
