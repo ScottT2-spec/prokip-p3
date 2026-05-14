@@ -4,10 +4,8 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/lib/api";
 import AppShell from "@/components/AppShell";
-import GradeBadge from "@/components/GradeBadge";
 import { Search, Trophy, ArrowUp } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { Grade } from "@/lib/grades";
 
 interface LeaderboardEntry {
   rank: number;
@@ -17,7 +15,7 @@ interface LeaderboardEntry {
   department: string | null;
   rewardPoints: number;
   totalPoints: number;
-  grade: Grade;
+  grade: string;
 }
 
 interface MyRank {
@@ -240,10 +238,7 @@ export default function LeaderboardPage() {
                           <span className="text-xs text-gray-400 ml-1">pts</span>
                         </div>
 
-                        {/* Grade */}
-                        <div className="mt-2">
-                          <GradeBadge grade={entry.grade} size="sm" />
-                        </div>
+
                       </div>
                     );
                   })}
@@ -264,7 +259,7 @@ export default function LeaderboardPage() {
                         <th className="text-left py-3 px-3 font-semibold text-prokip-navy text-sm">Member</th>
                         <th className="text-left py-3 px-3 font-semibold text-prokip-navy text-sm hidden sm:table-cell">Department</th>
                         <th className="text-right py-3 px-3 font-semibold text-prokip-navy text-sm">Reward Pts</th>
-                        <th className="text-left py-3 px-3 font-semibold text-prokip-navy text-sm hidden md:table-cell">Grade</th>
+
                       </tr>
                     </thead>
                     <tbody>
@@ -306,9 +301,7 @@ export default function LeaderboardPage() {
                                 {entry.rewardPoints.toLocaleString()}
                               </span>
                             </td>
-                            <td className="py-3 px-3 hidden md:table-cell">
-                              <GradeBadge grade={entry.grade} size="sm" />
-                            </td>
+
                           </tr>
                         );
                       })}

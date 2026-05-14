@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { User, Policy, PointCategory } from "@/lib/types";
+import { User, PointCategory } from "@/lib/types";
 import api from "@/lib/api";
 import Modal from "./Modal";
 import { formatPoints } from "@/lib/grades";
@@ -17,10 +17,8 @@ interface Props {
 
 export default function PointEntryModal({ open, onClose, preSelectedUser, onSuccess }: Props) {
   const [users, setUsers] = useState<User[]>([]);
-  const [policies, setPolicies] = useState<Policy[]>([]);
   const [selectedUserId, setSelectedUserId] = useState("");
   const [category, setCategory] = useState<PointCategory>("PERFORMANCE");
-  const [selectedPolicyId, setSelectedPolicyId] = useState("");
   const [customPoints, setCustomPoints] = useState("");
   const [reason, setReason] = useState("");
   const [ticketLink, setTicketLink] = useState("");
@@ -32,30 +30,23 @@ export default function PointEntryModal({ open, onClose, preSelectedUser, onSucc
 
   useEffect(() => {
     if (open) {
-      setLoadingData(true);
-      Promise.all([
-        preSelectedUser ? Promise.resolve([]) : api.get("/api/users").then(res => res.data.users.filter((u: User) => u.role !== "ADMIN")),
-        api.get("/api/policies").then(res => res.data.policies)
-      ]).then(([usersData, policiesData]) => {
-        if (!preSelectedUser) setUsers(usersData);
-        setPolicies(policiesData);
-        if (preSelectedUser) {
-          setSelectedUserId(preSelectedUser.id);
-        }
+      if (preSelectedUser) {
+        setSelectedUserId(preSelectedUser.id);
         setLoadingData(false);
-      }).catch(() => {
-        toast.error("Failed to load data");
-        setLoadingData(false);
-      });
+      } else {
+        setLoadingData(true);
+        api.get("/api/users").then(res => {
+          setUsers(res.data.users.filter((u: User) => u.role !== "ADMIN"));
+          setLoadingData(false);
+        }).catch(() => {
+          toast.error("Failed to load users");
+          setLoadingData(false);
+        });
+      }
     }
   }, [open, preSelectedUser]);
 
-  // Performance = deduction policies only (negative), Reward = addition policies only (positive)
-  const filteredPolicies = policies.filter(p =>
-    category === "PERFORMANCE" ? p.pointImpact < 0 : p.pointImpact > 0
-  );
-  const selectedPolicy = policies.find(p => p.id === selectedPolicyId);
-  const pointsToApply = selectedPolicy ? selectedPolicy.pointImpact : parseInt(customPoints) || 0;
+  const pointsToApply = parseInt(customPoints) || 0;
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -89,7 +80,6 @@ export default function PointEntryModal({ open, onClose, preSelectedUser, onSucc
       formData.append("points", String(pointsToApply));
       formData.append("category", category);
       formData.append("reason", reason.trim());
-      if (selectedPolicyId) formData.append("policyId", selectedPolicyId);
       if (ticketLink.trim()) formData.append("ticketLink", ticketLink.trim());
       if (imageFile) formData.append("image", imageFile);
 
@@ -110,31 +100,12 @@ export default function PointEntryModal({ open, onClose, preSelectedUser, onSucc
   const handleClose = () => {
     setSelectedUserId("");
     setCategory("PERFORMANCE");
-    setSelectedPolicyId("");
     setCustomPoints("");
     setReason("");
     setTicketLink("");
     setImageFile(null);
     setImagePreview(null);
     onClose();
-  };
-
-  const handlePolicyChange = (policyId: string) => {
-    setSelectedPolicyId(policyId);
-    setCustomPoints("");
-    if (policyId) {
-      const policy = policies.find(p => p.id === policyId);
-      if (policy) {
-        setReason(policy.description || policy.name);
-      }
-    } else {
-      setReason("");
-    }
-  };
-
-  const handleCustomPointsChange = (value: string) => {
-    setCustomPoints(value);
-    setSelectedPolicyId("");
   };
 
   if (!open) return null;
@@ -175,7 +146,7 @@ export default function PointEntryModal({ open, onClose, preSelectedUser, onSucc
             <div className="flex rounded-lg border border-gray-200 overflow-hidden">
               <button
                 type="button"
-                onClick={() => { setCategory("PERFORMANCE"); setSelectedPolicyId(""); setCustomPoints(""); }}
+                onClick={() => { setCategory("PERFORMANCE"); setCustomPoints(""); }}
                 className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
                   category === "PERFORMANCE"
                     ? "bg-prokip-navy text-white"
@@ -186,7 +157,7 @@ export default function PointEntryModal({ open, onClose, preSelectedUser, onSucc
               </button>
               <button
                 type="button"
-                onClick={() => { setCategory("REWARD"); setSelectedPolicyId(""); setCustomPoints(""); }}
+                onClick={() => { setCategory("REWARD"); setCustomPoints(""); }}
                 className={`flex-1 py-2.5 text-sm font-medium transition-colors border-l border-gray-200 ${
                   category === "REWARD"
                     ? "bg-prokip-gold text-prokip-navy-dark"
@@ -199,26 +170,16 @@ export default function PointEntryModal({ open, onClose, preSelectedUser, onSucc
           </div>
 
           <div>
-            <label className="input-label">Policy</label>
-            <select
-              value={selectedPolicyId}
-              onChange={(e) => handlePolicyChange(e.target.value)}
+            <label className="input-label">Points *</label>
+            <input
+              type="number"
+              value={customPoints}
+              onChange={(e) => setCustomPoints(e.target.value)}
+              placeholder={category === "PERFORMANCE" ? "e.g. -5" : "e.g. 10"}
               className="input-field"
-            >
-              <option value="">Select a policy...</option>
-              {filteredPolicies.map((policy) => (
-                <option key={policy.id} value={policy.id}>
-                  {policy.name} ({formatPoints(policy.pointImpact)} points)
-                </option>
-              ))}
-            </select>
+              required
+            />
           </div>
-
-          {selectedPolicy && (
-            <p className={`text-sm font-medium ${selectedPolicy.pointImpact > 0 ? 'text-green-600' : 'text-red-600'}`}>
-              Will apply {formatPoints(selectedPolicy.pointImpact)} points
-            </p>
-          )}
 
           <div>
             <label className="input-label">Reason *</label>

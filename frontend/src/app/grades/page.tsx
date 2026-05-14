@@ -282,7 +282,7 @@ export default function GradesPage() {
           <div>
             <h1 className="text-2xl font-bold text-prokip-navy">Grade System</h1>
             <p className="text-gray-600 mt-1">
-              Define grades, point thresholds, and rewards.
+              Define grades and point thresholds.
             </p>
           </div>
           {canManage && (

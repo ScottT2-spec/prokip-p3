@@ -6,7 +6,6 @@ import { useAuth } from "@/context/AuthContext";
 import {
   LayoutDashboard,
   Users,
-  FileText,
   Building2,
   ListTodo,
   LogOut,
@@ -16,8 +15,8 @@ import {
   Trophy,
   Medal,
   Upload,
-  Gift,
   History,
+  Shield,
 } from "lucide-react";
 import GradeBadge from "./GradeBadge";
 import { useState } from "react";
@@ -25,9 +24,9 @@ import { useState } from "react";
 const menuItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard, roles: ["ADMIN", "LEAD", "MEMBER"] },
   { href: "/users", label: "Users", icon: Users, roles: ["ADMIN", "LEAD"] },
-  { href: "/policies", label: "Policies", icon: FileText, roles: ["ADMIN", "LEAD"] },
   { href: "/departments", label: "Departments", icon: Building2, roles: ["ADMIN"] },
-  { href: "/grades", label: "Grades & Rewards", icon: Trophy, roles: ["ADMIN", "LEAD", "MEMBER"] },
+  { href: "/grades", label: "Grades", icon: Trophy, roles: ["ADMIN", "LEAD", "MEMBER"] },
+  { href: "/policies-rewards", label: "Policies & Rewards", icon: Shield, roles: ["MEMBER"] },
   { href: "/history", label: "History", icon: History, roles: ["MEMBER"] },
   { href: "/leaderboard", label: "Leaderboard", icon: Medal, roles: ["ADMIN", "LEAD", "MEMBER"] },
   { href: "/bulk-upload", label: "Bulk Upload", icon: Upload, roles: ["ADMIN", "LEAD"] },
