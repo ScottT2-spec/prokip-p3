@@ -472,7 +472,7 @@ export default function Dashboard() {
                   <p className="section-label">Reward Points</p>
                 </div>
                 <p className="text-3xl font-bold" style={{ color: "#F5B731" }}>
-                  {memberData.rewardPoints > 0 ? "+" : ""}{memberData.rewardPoints}
+                  {memberData.rewardPoints}
                 </p>
                 <p className="text-xs text-gray-500 mt-1">Reward-category total</p>
               </div>
