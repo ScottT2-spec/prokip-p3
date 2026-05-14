@@ -200,7 +200,7 @@ export default function UsersPage() {
                     <th className="text-left py-3 px-2 font-semibold text-prokip-navy">Email</th>
                     <th className="text-left py-3 px-2 font-semibold text-prokip-navy">Department</th>
                     <th className="text-left py-3 px-2 font-semibold text-prokip-navy">Role</th>
-                    <th className="text-right py-3 px-2 font-semibold text-prokip-navy">Points</th>
+                    <th className="text-right py-3 px-2 font-semibold text-prokip-navy">Performance</th>
                     <th
                       className="text-right py-3 px-2 font-semibold text-prokip-navy cursor-pointer select-none hover:text-prokip-gold transition-colors"
                       onClick={() => {
@@ -252,9 +252,14 @@ export default function UsersPage() {
                         {userData.role === "ADMIN" ? (
                           <span className="text-gray-400">—</span>
                         ) : (
-                          <span className={`font-semibold ${userData.points >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {userData.points}
-                          </span>
+                          (() => {
+                            const perf = userData.points - ((userData as any).rewardPoints ?? 0);
+                            return (
+                              <span className={`font-semibold ${perf >= 100 ? 'text-green-600' : perf >= 0 ? 'text-prokip-navy' : 'text-red-600'}`}>
+                                {perf}
+                              </span>
+                            );
+                          })()
                         )}
                       </td>
                       <td className="py-3 px-2 text-right">
@@ -262,9 +267,9 @@ export default function UsersPage() {
                           <span className="text-gray-400">—</span>
                         ) : (
                           <span className={`font-semibold inline-flex items-center gap-1 ${
-                            userData.points > 104 ? 'text-prokip-gold' : 'text-prokip-navy'
+                            ((userData as any).rewardPoints ?? 0) > 0 ? 'text-prokip-gold' : 'text-prokip-navy'
                           }`}>
-                            {userData.points > 104 && <Star className="w-3.5 h-3.5 fill-prokip-gold text-prokip-gold" />}
+                            {((userData as any).rewardPoints ?? 0) > 0 && <Star className="w-3.5 h-3.5 fill-prokip-gold text-prokip-gold" />}
                             {(userData as any).rewardPoints ?? 0}
                           </span>
                         )}
