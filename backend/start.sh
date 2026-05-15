@@ -1,7 +1,5 @@
 #!/bin/sh
-echo "Running migrations..."
-npx prisma migrate deploy || echo "Migration warning (continuing anyway)"
-echo "Regenerating Prisma client..."
-npx prisma generate || echo "Generate warning (continuing anyway)"
+echo "Pushing schema to database..."
+npx prisma db push --accept-data-loss 2>&1 || echo "DB push warning (continuing)"
 echo "Starting server..."
 exec node src/index.js
