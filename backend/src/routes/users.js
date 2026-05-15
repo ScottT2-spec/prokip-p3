@@ -216,7 +216,15 @@ router.put('/:id', authenticate, authorize('ADMIN'), async (req, res) => {
 });
 
 // POST /api/users/avatar - Upload profile picture (authenticated user)
-router.post('/avatar', authenticate, upload.single('avatar'), async (req, res) => {
+router.post('/avatar', authenticate, (req, res, next) => {
+  upload.single('avatar')(req, res, (err) => {
+    if (err) {
+      console.error('Multer error:', err.message, err.code);
+      return res.status(400).json({ error: `Upload error: ${err.message}` });
+    }
+    next();
+  });
+}, async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No image file provided.' });
@@ -233,8 +241,8 @@ router.post('/avatar', authenticate, upload.single('avatar'), async (req, res) =
     const { password: _, ...userWithoutPassword } = user;
     res.json({ user: userWithoutPassword });
   } catch (error) {
-    console.error('Avatar upload error:', error);
-    res.status(500).json({ error: 'Failed to upload avatar.' });
+    console.error('Avatar upload error:', error.message, error.stack);
+    res.status(500).json({ error: `Failed to upload avatar: ${error.message}` });
   }
 });
 
