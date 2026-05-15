@@ -222,6 +222,8 @@ export default function GradesPage() {
                 <th className="text-left py-3 px-3 font-semibold text-prokip-navy text-sm">Grade</th>
                 <th className="text-left py-3 px-3 font-semibold text-prokip-navy text-sm">Min Points</th>
                 <th className="text-left py-3 px-3 font-semibold text-prokip-navy text-sm">Max Points</th>
+                <th className="text-left py-3 px-3 font-semibold text-prokip-navy text-sm">Reward</th>
+                <th className="text-left py-3 px-3 font-semibold text-prokip-navy text-sm">Consequence</th>
                 {canManage && <th className="text-right py-3 px-3 font-semibold text-prokip-navy text-sm">Actions</th>}
               </tr>
             </thead>
@@ -236,6 +238,12 @@ export default function GradesPage() {
                   </td>
                   <td className="py-3 px-3 text-sm font-mono text-prokip-navy">
                     {def.maxPoints ?? "∞"}
+                  </td>
+                  <td className="py-3 px-3 text-sm text-gray-600 max-w-[200px]">
+                    {def.reward || <span className="text-gray-300">—</span>}
+                  </td>
+                  <td className="py-3 px-3 text-sm text-gray-600 max-w-[200px]">
+                    {def.consequence || <span className="text-gray-300">—</span>}
                   </td>
                   {canManage && (
                     <td className="py-3 px-3 text-right">
@@ -253,7 +261,7 @@ export default function GradesPage() {
               ))}
               {sorted.length === 0 && (
                 <tr>
-                  <td colSpan={canManage ? 4 : 3} className="py-8 text-center text-gray-400">
+                  <td colSpan={canManage ? 6 : 5} className="py-8 text-center text-gray-400">
                     No grade definitions yet
                   </td>
                 </tr>
@@ -493,6 +501,11 @@ export default function GradesPage() {
           <div>
             <label className="input-label">Reward <span className="text-gray-400 font-normal">(what they earn at this grade)</span></label>
             <textarea value={defForm.reward} onChange={(e) => setDefForm(p => ({ ...p, reward: e.target.value }))} className="input-field min-h-[70px] resize-none" placeholder="e.g. Quarterly bonus, extra PTO..." />
+          </div>
+
+          <div>
+            <label className="input-label">Consequence <span className="text-gray-400 font-normal">(what happens at this grade)</span></label>
+            <textarea value={defForm.consequence} onChange={(e) => setDefForm(p => ({ ...p, consequence: e.target.value }))} className="input-field min-h-[70px] resize-none" placeholder="e.g. Performance review, probation..." />
           </div>
 
           {user?.role === "ADMIN" && (
