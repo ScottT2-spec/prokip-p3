@@ -88,7 +88,11 @@ export default function ProfilePage() {
 
           {/* Avatar Section */}
           <div className="flex flex-col items-center mb-6">
-            <div className="relative group">
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={avatarLoading}
+              className="relative cursor-pointer"
+            >
               {avatarSrc ? (
                 <img
                   src={avatarSrc}
@@ -100,24 +104,20 @@ export default function ProfilePage() {
                   {initials}
                 </div>
               )}
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                disabled={avatarLoading}
-                className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
-              >
-                <Camera className="w-6 h-6 text-white" />
-              </button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/jpeg,image/png,image/gif,image/webp"
-                onChange={handleAvatarUpload}
-                className="hidden"
-              />
-            </div>
-            <p className="text-xs text-gray-400 mt-2">
-              {avatarLoading ? "Uploading..." : "Click to change photo"}
-            </p>
+              <div className="absolute bottom-0 right-0 w-8 h-8 bg-prokip-navy rounded-full flex items-center justify-center border-2 border-white shadow-md">
+                <Camera className="w-4 h-4 text-white" />
+              </div>
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/gif,image/webp"
+              onChange={handleAvatarUpload}
+              className="hidden"
+            />
+            {avatarLoading && (
+              <p className="text-xs text-gray-400 mt-2">Uploading...</p>
+            )}
           </div>
 
           <div className="space-y-4">
