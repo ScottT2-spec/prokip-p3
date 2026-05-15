@@ -18,8 +18,8 @@ export default function HistoryPage() {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
-  const [totalAdded, setTotalAdded] = useState(0);
-  const [totalDeducted, setTotalDeducted] = useState(0);
+  const [totalPerformance, setTotalPerformance] = useState(0);
+  const [totalReward, setTotalReward] = useState(0);
   const [categoryFilter, setCategoryFilter] = useState<string>("");
   const limit = 20;
 
@@ -48,8 +48,8 @@ export default function HistoryPage() {
       );
       setLogs(response.data.logs);
       setTotal(response.data.total);
-      setTotalAdded(response.data.totalAdded ?? 0);
-      setTotalDeducted(response.data.totalDeducted ?? 0);
+      setTotalPerformance(response.data.totalPerformance ?? response.data.totalAdded ?? 0);
+      setTotalReward(response.data.totalReward ?? response.data.totalDeducted ?? 0);
     } catch (error) {
       toast.error("Failed to load history");
     } finally {
@@ -89,21 +89,21 @@ export default function HistoryPage() {
         {/* Aggregate Summary */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="card flex items-center gap-4">
-            <div className="p-3 bg-green-100 rounded-lg">
-              <ArrowUp className="w-5 h-5 text-green-600" />
+            <div className="p-3 bg-slate-100 rounded-lg">
+              <ArrowDown className="w-5 h-5 text-prokip-navy" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Total Points Added</p>
-              <p className="text-2xl font-bold text-green-600">+{totalAdded}</p>
+              <p className="text-sm text-gray-500">⚙️ Performance Points</p>
+              <p className="text-2xl font-bold text-prokip-navy">{totalPerformance}</p>
             </div>
           </div>
           <div className="card flex items-center gap-4">
-            <div className="p-3 bg-red-100 rounded-lg">
-              <ArrowDown className="w-5 h-5 text-red-600" />
+            <div className="p-3 bg-amber-100 rounded-lg">
+              <ArrowUp className="w-5 h-5 text-amber-600" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Total Points Deducted</p>
-              <p className="text-2xl font-bold text-red-600">-{totalDeducted}</p>
+              <p className="text-sm text-gray-500">🌟 Reward Points</p>
+              <p className="text-2xl font-bold text-prokip-gold">{totalReward}</p>
             </div>
           </div>
         </div>

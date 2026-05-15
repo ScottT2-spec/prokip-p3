@@ -162,11 +162,11 @@ router.get('/history/:userId', authenticate, async (req, res) => {
       }),
       prisma.pointLog.count({ where }),
       prisma.pointLog.aggregate({
-        where: { userId: req.params.userId, points: { gt: 0 } },
+        where: { userId: req.params.userId, category: 'PERFORMANCE' },
         _sum: { points: true },
       }),
       prisma.pointLog.aggregate({
-        where: { userId: req.params.userId, points: { lt: 0 } },
+        where: { userId: req.params.userId, category: 'REWARD' },
         _sum: { points: true },
       }),
     ]);
@@ -202,16 +202,16 @@ router.get('/history/:userId', authenticate, async (req, res) => {
       return { ...log, balanceAfter };
     });
 
-    const totalAdded = addedAgg._sum.points || 0;
-    const totalDeducted = Math.abs(deductedAgg._sum.points || 0);
+    const totalPerformance = addedAgg._sum.points || 0;
+    const totalReward = deductedAgg._sum.points || 0;
 
     res.json({
       logs: logsWithBalance,
       total,
       page: parseInt(page),
       limit: parseInt(limit),
-      totalAdded,
-      totalDeducted,
+      totalPerformance,
+      totalReward,
     });
   } catch (error) {
     console.error('Point history error:', error);
