@@ -616,6 +616,17 @@ export default function Dashboard() {
                       }`}>
                         {entry.rank || index + 1}
                       </span>
+                      {entry.avatarUrl ? (
+                        <img
+                          src={`${process.env.NEXT_PUBLIC_API_URL || ""}${entry.avatarUrl}`}
+                          alt={`${entry.firstName} ${entry.lastName}`}
+                          className="w-8 h-8 rounded-full object-cover flex-shrink-0 border-2 border-gray-200"
+                        />
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-prokip-navy/10 flex items-center justify-center flex-shrink-0 text-xs font-bold text-prokip-navy">
+                          {entry.firstName?.[0]}{entry.lastName?.[0]}
+                        </div>
+                      )}
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-prokip-navy truncate">
                           {entry.firstName} {entry.lastName}
