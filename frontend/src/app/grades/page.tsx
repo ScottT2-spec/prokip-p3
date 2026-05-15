@@ -355,9 +355,16 @@ export default function GradesPage() {
         {/* REWARDS DATATABLE */}
         {/* ============================================================ */}
         <div className="card">
-          <div className="flex items-center gap-3 mb-4">
-            <Gift className="w-5 h-5 text-prokip-gold" />
-            <h3 className="text-lg font-semibold text-prokip-navy">Rewards</h3>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <Gift className="w-5 h-5 text-prokip-gold" />
+              <h3 className="text-lg font-semibold text-prokip-navy">Rewards</h3>
+            </div>
+            {canManage && (
+              <button onClick={openNewDef} className="btn-primary flex items-center gap-2 text-sm">
+                <Plus className="w-4 h-4" /> Add Reward
+              </button>
+            )}
           </div>
 
           {allDefsForRewards.length > 0 ? (
