@@ -622,7 +622,6 @@ export default function Dashboard() {
                           {(entry.userId || entry.id) === user?.id && <span className="text-xs text-prokip-gold ml-1">(You)</span>}
                         </p>
                       </div>
-                      <GradeBadge grade={entry.grade} size="sm" />
                       <span className="font-semibold text-sm text-prokip-navy flex-shrink-0">{entry.totalPoints ?? entry.points} pts</span>
                     </div>
                   ))}
