@@ -222,7 +222,6 @@ export default function GradesPage() {
                 <th className="text-left py-3 px-3 font-semibold text-prokip-navy text-sm">Grade</th>
                 <th className="text-left py-3 px-3 font-semibold text-prokip-navy text-sm">Min Points</th>
                 <th className="text-left py-3 px-3 font-semibold text-prokip-navy text-sm">Max Points</th>
-                <th className="text-left py-3 px-3 font-semibold text-prokip-navy text-sm">Reward</th>
                 <th className="text-left py-3 px-3 font-semibold text-prokip-navy text-sm">Consequence</th>
                 {canManage && <th className="text-right py-3 px-3 font-semibold text-prokip-navy text-sm">Actions</th>}
               </tr>
@@ -238,9 +237,6 @@ export default function GradesPage() {
                   </td>
                   <td className="py-3 px-3 text-sm font-mono text-prokip-navy">
                     {def.maxPoints ?? "∞"}
-                  </td>
-                  <td className="py-3 px-3 text-sm text-gray-600 max-w-[200px]">
-                    {def.reward || <span className="text-gray-300">—</span>}
                   </td>
                   <td className="py-3 px-3 text-sm text-gray-600 max-w-[200px]">
                     {def.consequence || <span className="text-gray-300">—</span>}
@@ -261,7 +257,7 @@ export default function GradesPage() {
               ))}
               {sorted.length === 0 && (
                 <tr>
-                  <td colSpan={canManage ? 6 : 5} className="py-8 text-center text-gray-400">
+                  <td colSpan={canManage ? 5 : 4} className="py-8 text-center text-gray-400">
                     No grade definitions yet
                   </td>
                 </tr>
