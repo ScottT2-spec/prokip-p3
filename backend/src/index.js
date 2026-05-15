@@ -42,6 +42,31 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', service: 'Prokip P3 API' });
 });
 
+// Test email endpoint (remove in production)
+app.post('/api/health/test-email', async (req, res) => {
+  try {
+    const { to } = req.body;
+    if (!to) return res.status(400).json({ error: 'Provide "to" email address' });
+    const nodemailer = require('nodemailer');
+    const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: process.env.SMTP_PORT,
+      secure: false,
+      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+    });
+    await transporter.sendMail({
+      from: process.env.EMAIL_FROM || 'notifications@prokip.com',
+      to,
+      subject: '✅ Prokip P3 – Email Test',
+      html: '<div style="font-family:Arial;padding:20px;"><h2>Email Works!</h2><p>This is a test email from Prokip P3 API.</p></div>',
+    });
+    res.json({ success: true, message: `Test email sent to ${to}` });
+  } catch (error) {
+    console.error('Test email error:', error.message);
+    res.status(500).json({ error: `Email failed: ${error.message}` });
+  }
+});
+
 app.listen(PORT, async () => {
   console.log(`P3 API running on port ${PORT}`);
 
