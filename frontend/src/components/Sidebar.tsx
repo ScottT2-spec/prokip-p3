@@ -92,9 +92,17 @@ export default function Sidebar() {
           {!collapsed && (
             <>
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 bg-prokip-navy rounded-full flex items-center justify-center text-white text-xs font-bold">
-                  {user.firstName[0]}{user.lastName[0]}
-                </div>
+                {user.avatarUrl ? (
+                  <img
+                    src={`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}${user.avatarUrl}`}
+                    alt={`${user.firstName} ${user.lastName}`}
+                    className="w-8 h-8 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-8 h-8 bg-prokip-navy rounded-full flex items-center justify-center text-white text-xs font-bold">
+                    {user.firstName[0]}{user.lastName[0]}
+                  </div>
+                )}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-prokip-navy truncate">
                     {user.firstName} {user.lastName}

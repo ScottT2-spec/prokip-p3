@@ -1,19 +1,49 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/lib/api";
 import AppShell from "@/components/AppShell";
 import GradeBadge from "@/components/GradeBadge";
-import { User, Lock, Building2, Mail, Shield } from "lucide-react";
+import { User, Lock, Building2, Mail, Shield, Camera } from "lucide-react";
 import toast from "react-hot-toast";
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+
 export default function ProfilePage() {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [avatarLoading, setAvatarLoading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image must be under 5MB");
+      return;
+    }
+
+    setAvatarLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append("avatar", file);
+      await api.post("/api/users/avatar", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      await refreshUser();
+      toast.success("Profile picture updated");
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || "Failed to upload picture");
+    } finally {
+      setAvatarLoading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,12 +76,50 @@ export default function ProfilePage() {
 
   if (!user) return null;
 
+  const initials = `${user.firstName[0] || ""}${user.lastName[0] || ""}`.toUpperCase();
+  const avatarSrc = user.avatarUrl ? `${API_BASE}${user.avatarUrl}` : null;
+
   return (
     <AppShell title="My Profile">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Profile Info */}
         <div className="card h-fit">
           <h3 className="text-lg font-semibold text-prokip-navy mb-6">Profile Information</h3>
+
+          {/* Avatar Section */}
+          <div className="flex flex-col items-center mb-6">
+            <div className="relative group">
+              {avatarSrc ? (
+                <img
+                  src={avatarSrc}
+                  alt={`${user.firstName} ${user.lastName}`}
+                  className="w-24 h-24 rounded-full object-cover ring-4 ring-prokip-navy/10"
+                />
+              ) : (
+                <div className="w-24 h-24 rounded-full bg-prokip-navy text-white flex items-center justify-center text-2xl font-bold ring-4 ring-prokip-navy/10">
+                  {initials}
+                </div>
+              )}
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={avatarLoading}
+                className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
+              >
+                <Camera className="w-6 h-6 text-white" />
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/gif,image/webp"
+                onChange={handleAvatarUpload}
+                className="hidden"
+              />
+            </div>
+            <p className="text-xs text-gray-400 mt-2">
+              {avatarLoading ? "Uploading..." : "Click to change photo"}
+            </p>
+          </div>
+
           <div className="space-y-4">
             <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
               <User className="w-5 h-5 text-gray-400" />

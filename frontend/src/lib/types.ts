@@ -17,6 +17,7 @@ export interface User {
   role: Role;
   points: number;
   grade: Grade;
+  avatarUrl?: string | null;
   department?: Department | null;
   departmentId?: string | null;
   createdAt?: string;

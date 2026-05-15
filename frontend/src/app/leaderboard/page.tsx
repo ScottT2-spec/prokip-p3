@@ -7,12 +7,15 @@ import AppShell from "@/components/AppShell";
 import { Search, Trophy, ArrowUp } from "lucide-react";
 import { useRouter } from "next/navigation";
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+
 interface LeaderboardEntry {
   rank: number;
   userId: string;
   firstName: string;
   lastName: string;
   department: string | null;
+  avatarUrl: string | null;
   rewardPoints: number;
   totalPoints: number;
   grade: string;
@@ -211,11 +214,19 @@ export default function LeaderboardPage() {
                         <span className="text-3xl mb-2">{style.label}</span>
 
                         {/* Avatar */}
-                        <div
-                          className={`${style.size} rounded-full flex items-center justify-center font-bold ring-4 ${style.ring} ${style.avatarBg} mb-3 shadow-md`}
-                        >
-                          {getInitials(entry.firstName, entry.lastName)}
-                        </div>
+                        {entry.avatarUrl ? (
+                          <img
+                            src={`${API_BASE}${entry.avatarUrl}`}
+                            alt={`${entry.firstName} ${entry.lastName}`}
+                            className={`${style.size} rounded-full object-cover ring-4 ${style.ring} mb-3 shadow-md`}
+                          />
+                        ) : (
+                          <div
+                            className={`${style.size} rounded-full flex items-center justify-center font-bold ring-4 ${style.ring} ${style.avatarBg} mb-3 shadow-md`}
+                          >
+                            {getInitials(entry.firstName, entry.lastName)}
+                          </div>
+                        )}
 
                         {/* Name */}
                         <p className={`font-bold text-prokip-navy text-sm ${isMe ? "text-prokip-gold" : ""}`}>
@@ -280,9 +291,17 @@ export default function LeaderboardPage() {
                             <td className="py-3 px-3">
                               <div className="flex items-center gap-3">
                                 {/* Avatar */}
-                                <div className="w-8 h-8 rounded-full bg-prokip-navy/10 text-prokip-navy flex items-center justify-center text-xs font-bold flex-shrink-0">
-                                  {getInitials(entry.firstName, entry.lastName)}
-                                </div>
+                                {entry.avatarUrl ? (
+                                  <img
+                                    src={`${API_BASE}${entry.avatarUrl}`}
+                                    alt={`${entry.firstName} ${entry.lastName}`}
+                                    className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                                  />
+                                ) : (
+                                  <div className="w-8 h-8 rounded-full bg-prokip-navy/10 text-prokip-navy flex items-center justify-center text-xs font-bold flex-shrink-0">
+                                    {getInitials(entry.firstName, entry.lastName)}
+                                  </div>
+                                )}
                                 <span className={`font-medium text-sm ${isMe ? "text-prokip-gold" : "text-prokip-navy"}`}>
                                   {entry.firstName} {entry.lastName}
                                   {isMe && (

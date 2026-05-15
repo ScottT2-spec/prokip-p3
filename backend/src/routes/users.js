@@ -4,6 +4,7 @@ const { body, query, validationResult } = require('express-validator');
 const prisma = require('../config/db');
 const { authenticate, authorize } = require('../middleware/auth');
 const { calculateGrade } = require('../utils/gradeCalculator');
+const upload = require('../middleware/upload');
 
 const router = express.Router();
 
@@ -56,6 +57,7 @@ router.get('/', authenticate, authorize('ADMIN', 'LEAD'), async (req, res) => {
           role: true,
           points: true,
           grade: true,
+          avatarUrl: true,
           department: true,
           createdAt: true,
         },
@@ -210,6 +212,29 @@ router.put('/:id', authenticate, authorize('ADMIN'), async (req, res) => {
   } catch (error) {
     console.error('Update user error:', error);
     res.status(500).json({ error: 'Server error.' });
+  }
+});
+
+// POST /api/users/avatar - Upload profile picture (authenticated user)
+router.post('/avatar', authenticate, upload.single('avatar'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No image file provided.' });
+    }
+
+    const avatarUrl = `/uploads/${req.file.filename}`;
+
+    const user = await prisma.user.update({
+      where: { id: req.user.id },
+      data: { avatarUrl },
+      include: { department: true },
+    });
+
+    const { password: _, ...userWithoutPassword } = user;
+    res.json({ user: userWithoutPassword });
+  } catch (error) {
+    console.error('Avatar upload error:', error);
+    res.status(500).json({ error: 'Failed to upload avatar.' });
   }
 });
 

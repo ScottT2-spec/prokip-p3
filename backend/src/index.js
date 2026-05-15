@@ -145,6 +145,9 @@ app.listen(PORT, async () => {
       END $$
     `).catch(() => {});
 
+    // Add avatarUrl to users if missing
+    await prisma.$executeRawUnsafe(`ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "avatarUrl" TEXT`).catch(() => {});
+
     // Add indexes for reward_policies
     await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "reward_policies_grade_idx" ON "reward_policies"("grade")`).catch(() => {});
     await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "reward_policies_departmentId_idx" ON "reward_policies"("departmentId")`).catch(() => {});

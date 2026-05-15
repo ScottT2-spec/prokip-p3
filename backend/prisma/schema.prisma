@@ -30,6 +30,7 @@ model User {
   role         Role     @default(MEMBER)
   points       Int      @default(100)
   grade        Grade    @default(A)
+  avatarUrl    String?
   departmentId   String?
   department     Department? @relation(fields: [departmentId], references: [id])
   createdAt      DateTime @default(now())

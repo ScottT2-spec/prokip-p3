@@ -73,13 +73,14 @@ router.get('/', authenticate, async (req, res) => {
           u."lastName",
           u."points" AS "totalPoints",
           u."grade",
+          u."avatarUrl",
           d."name" AS "department",
           COALESCE(SUM(CASE WHEN pl."category" = 'REWARD' THEN pl."points" ELSE 0 END), 0)::int AS "rewardPoints"
         FROM "users" u
         LEFT JOIN "departments" d ON u."departmentId" = d."id"
         LEFT JOIN "point_logs" pl ON pl."userId" = u."id"
         WHERE ${whereClause}
-        GROUP BY u."id", u."firstName", u."lastName", u."points", u."grade", d."name"
+        GROUP BY u."id", u."firstName", u."lastName", u."points", u."grade", u."avatarUrl", d."name"
         ORDER BY "rewardPoints" DESC, u."points" DESC, u."firstName" ASC
       `;
 
@@ -106,6 +107,7 @@ router.get('/', authenticate, async (req, res) => {
           firstName: row.firstName,
           lastName: row.lastName,
           department: row.department,
+          avatarUrl: row.avatarUrl || null,
           rewardPoints,
           totalPoints,
           grade: row.grade,
