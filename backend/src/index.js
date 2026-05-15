@@ -77,6 +77,9 @@ app.listen(PORT, async () => {
       END $$
     `).catch(() => {});
 
+    // Add avatarUrl to users if missing
+    await prisma.$executeRawUnsafe(`ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "avatarUrl" TEXT`).catch(() => {});
+
     // Add imageUrl to point_logs if missing
     await prisma.$executeRawUnsafe(`ALTER TABLE "point_logs" ADD COLUMN IF NOT EXISTS "imageUrl" TEXT`).catch(() => {});
 
