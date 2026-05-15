@@ -12,9 +12,10 @@ RUN npx prisma generate
 
 COPY src ./src/
 
-RUN mkdir -p /app/uploads && chmod 777 /app/uploads
+RUN mkdir -p /tmp/uploads && chmod 777 /tmp/uploads
 
 ENV NODE_ENV=production
+ENV UPLOAD_DIR=/tmp/uploads
 EXPOSE 7860
 
 COPY start.sh ./
