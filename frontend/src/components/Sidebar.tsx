@@ -28,7 +28,7 @@ const menuItems = [
   { href: "/grades", label: "Grades & Rewards", icon: Trophy, roles: ["ADMIN", "LEAD", "MEMBER"] },
   { href: "/policies-rewards", label: "Policies & Rewards", icon: Shield, roles: ["MEMBER"] },
   { href: "/history", label: "History", icon: History, roles: ["MEMBER"] },
-  { href: "/leaderboard", label: "Leaderboard", icon: Medal, roles: ["ADMIN", "LEAD", "MEMBER"] },
+  { href: "/leaderboard", label: "Leaderboard", icon: Medal, roles: ["ADMIN", "LEAD"] },
   { href: "/bulk-upload", label: "Bulk Upload", icon: Upload, roles: ["ADMIN", "LEAD"] },
   { href: "/profile", label: "My Profile", icon: Users, roles: ["ADMIN", "LEAD", "MEMBER"] },
 ];
