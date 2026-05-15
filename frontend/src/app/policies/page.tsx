@@ -233,7 +233,7 @@ export default function PoliciesPage() {
 
     try {
       const text = await file.text();
-      let parsedPolicies: ParsedPolicy[] = [];
+      const parsedPolicies: ParsedPolicy[] = [];
       const errors: { row: number; error: string }[] = [];
 
       if (ext === "json") {
