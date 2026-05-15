@@ -12,6 +12,8 @@ RUN npx prisma generate
 
 COPY src ./src/
 
+RUN mkdir -p /app/uploads && chmod 777 /app/uploads
+
 ENV NODE_ENV=production
 EXPOSE 7860
 
