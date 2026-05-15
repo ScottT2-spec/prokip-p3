@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   Users,
   Building2,
+  FileText,
   ListTodo,
   LogOut,
   Zap,
@@ -24,6 +25,7 @@ import { useState } from "react";
 const menuItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard, roles: ["ADMIN", "LEAD", "MEMBER"] },
   { href: "/users", label: "Users", icon: Users, roles: ["ADMIN", "LEAD"] },
+  { href: "/policies", label: "Policies", icon: FileText, roles: ["ADMIN", "LEAD"] },
   { href: "/departments", label: "Departments", icon: Building2, roles: ["ADMIN"] },
   { href: "/grades", label: "Grades & Rewards", icon: Trophy, roles: ["ADMIN", "LEAD", "MEMBER"] },
   { href: "/policies-rewards", label: "Policies & Rewards", icon: Shield, roles: ["MEMBER"] },
