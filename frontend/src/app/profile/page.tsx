@@ -48,9 +48,9 @@ export default function ProfilePage() {
 
   return (
     <AppShell title="My Profile">
-      <div className="max-w-2xl space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Profile Info */}
-        <div className="card">
+        <div className="card h-fit">
           <h3 className="text-lg font-semibold text-prokip-navy mb-6">Profile Information</h3>
           <div className="space-y-4">
             <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
@@ -100,7 +100,6 @@ export default function ProfilePage() {
                 </div>
                 <div>
                   <p className="text-xs text-gray-500">Current Grade</p>
-                  <p className="font-medium text-prokip-navy">{user.points} points</p>
                 </div>
               </div>
             )}
@@ -108,7 +107,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Change Password */}
-        <div className="card">
+        <div className="card h-fit">
           <div className="flex items-center gap-2 mb-6">
             <Lock className="w-5 h-5 text-prokip-navy" />
             <h3 className="text-lg font-semibold text-prokip-navy">Change Password</h3>
