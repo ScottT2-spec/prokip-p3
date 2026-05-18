@@ -8,67 +8,126 @@ const router = express.Router();
 // GET /api/dashboard/admin - Admin/Lead overview
 router.get('/admin', authenticate, authorize('ADMIN', 'LEAD'), async (req, res) => {
   try {
-    const where = {};
+    const { page = 1, limit = 25, search, department, grade } = req.query;
+    const pageNum = parseInt(page);
+    const limitNum = Math.min(parseInt(limit) || 25, 100); // Cap at 100
+
+    const where = { role: { not: 'ADMIN' } }; // Admins are not graded
     if (req.user.role === 'LEAD') {
       where.departmentId = req.user.departmentId;
     }
+    if (search) {
+      where.OR = [
+        { firstName: { contains: search, mode: 'insensitive' } },
+        { lastName: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+    if (department) {
+      where.departmentId = department;
+    }
+    if (grade) {
+      where.grade = grade;
+    }
 
-    // Get all users with their points
-    const users = await prisma.user.findMany({
-      where,
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-        email: true,
-        points: true,
-        grade: true,
-        role: true,
-        department: true,
-      },
-      orderBy: { points: 'desc' },
-    });
+    // Get paginated rankings (NOT all users)
+    const [rankings, total] = await Promise.all([
+      prisma.user.findMany({
+        where,
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          points: true,
+          grade: true,
+          role: true,
+          department: { select: { id: true, name: true } },
+        },
+        orderBy: { points: 'desc' },
+        skip: (pageNum - 1) * limitNum,
+        take: limitNum,
+      }),
+      prisma.user.count({ where }),
+    ]);
 
-    // Calculate stats
-    const totalMembers = users.length;
-    const avgPoints = totalMembers > 0
-      ? Math.round(users.reduce((sum, u) => sum + u.points, 0) / totalMembers)
-      : 0;
+    // Use DB aggregation for stats instead of loading all users
+    const deptFilter = req.user.role === 'LEAD'
+      ? { departmentId: req.user.departmentId, role: { not: 'ADMIN' } }
+      : { role: { not: 'ADMIN' } }; // Exclude admins from all grade stats
 
-    const atRisk = users.filter(u => u.grade === 'F');
-    const topPerformers = users.filter(u => u.grade === 'A_PLUS');
+    const [stats, gradeDistribution, atRisk, topPerformers, recentActivity] = await Promise.all([
+      // Aggregate stats in DB
+      prisma.user.aggregate({
+        where: deptFilter,
+        _avg: { points: true },
+        _count: true,
+      }),
 
-    const gradeDistribution = {
-      A_PLUS: users.filter(u => u.grade === 'A_PLUS').length,
-      A: users.filter(u => u.grade === 'A').length,
-      B: users.filter(u => u.grade === 'B').length,
-      C: users.filter(u => u.grade === 'C').length,
-      F: users.filter(u => u.grade === 'F').length,
-    };
+      // Grade distribution via groupBy (DB-level, not JS)
+      prisma.user.groupBy({
+        by: ['grade'],
+        where: deptFilter,
+        _count: true,
+      }),
 
-    // Recent point changes
-    const recentActivity = await prisma.pointLog.findMany({
-      where: req.user.role === 'LEAD'
-        ? { user: { departmentId: req.user.departmentId } }
-        : {},
-      include: {
-        user: { select: { firstName: true, lastName: true } },
-        givenBy: { select: { firstName: true, lastName: true } },
-        policy: { select: { name: true } },
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 20,
+      // At-risk members (Grade F) — top 10 only
+      prisma.user.findMany({
+        where: { ...deptFilter, grade: 'F' },
+        select: {
+          id: true, firstName: true, lastName: true,
+          points: true, grade: true,
+          department: { select: { name: true } },
+        },
+        orderBy: { points: 'asc' },
+        take: 10,
+      }),
+
+      // Top performers (A+) — top 10 only
+      prisma.user.findMany({
+        where: { ...deptFilter, grade: 'A_PLUS' },
+        select: {
+          id: true, firstName: true, lastName: true,
+          points: true, grade: true,
+          department: { select: { name: true } },
+        },
+        orderBy: { points: 'desc' },
+        take: 10,
+      }),
+
+      // Recent activity — last 5 (dashboard snapshot)
+      prisma.pointLog.findMany({
+        where: req.user.role === 'LEAD'
+          ? { user: { departmentId: req.user.departmentId } }
+          : {},
+        include: {
+          user: { select: { firstName: true, lastName: true } },
+          givenBy: { select: { firstName: true, lastName: true } },
+          policy: { select: { name: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+      }),
+    ]);
+
+    // Format grade distribution from groupBy result
+    const gradeDist = { A_PLUS: 0, A: 0, B: 0, C: 0, F: 0 };
+    gradeDistribution.forEach(g => {
+      gradeDist[g.grade] = g._count;
     });
 
     res.json({
       stats: {
-        totalMembers,
-        avgPoints,
-        atRiskCount: atRisk.length,
-        topPerformerCount: topPerformers.length,
+        totalMembers: stats._count,
+        avgPoints: Math.round(stats._avg.points || 0),
+        atRiskCount: gradeDist.F,
+        topPerformerCount: gradeDist.A_PLUS,
       },
-      gradeDistribution,
-      rankings: users,
+      gradeDistribution: gradeDist,
+      rankings,
+      total,
+      page: pageNum,
+      limit: limitNum,
       atRisk,
       topPerformers,
       recentActivity,
@@ -87,9 +146,9 @@ router.get('/member', authenticate, async (req, res) => {
       include: { department: true },
     });
 
-    const gradeInfo = getGradeInfo(user.grade);
+    const gradeInfo = await getGradeInfo(user.grade, user.departmentId);
 
-    // Recent point history
+    // Recent point history — last 5 (dashboard snapshot)
     const recentLogs = await prisma.pointLog.findMany({
       where: { userId: req.user.id },
       include: {
@@ -97,7 +156,7 @@ router.get('/member', authenticate, async (req, res) => {
         policy: { select: { name: true } },
       },
       orderBy: { createdAt: 'desc' },
-      take: 10,
+      take: 5,
     });
 
     // Points trend (last 30 days)
@@ -113,14 +172,94 @@ router.get('/member', authenticate, async (req, res) => {
       orderBy: { createdAt: 'asc' },
     });
 
+    // Rank among peers (same department)
+    const rank = user.departmentId
+      ? await prisma.user.count({
+          where: {
+            departmentId: user.departmentId,
+            points: { gt: user.points },
+          },
+        }) + 1
+      : null;
+
+    // Point aggregations (reward points, performance points, total added, total deducted)
+    const [addedAgg, deductedAgg, rewardAgg, performanceAgg] = await Promise.all([
+      prisma.pointLog.aggregate({
+        where: { userId: req.user.id, points: { gt: 0 } },
+        _sum: { points: true },
+      }),
+      prisma.pointLog.aggregate({
+        where: { userId: req.user.id, points: { lt: 0 } },
+        _sum: { points: true },
+      }),
+      prisma.pointLog.aggregate({
+        where: { userId: req.user.id, category: 'REWARD' },
+        _sum: { points: true },
+      }),
+      prisma.pointLog.aggregate({
+        where: { userId: req.user.id, category: 'PERFORMANCE' },
+        _sum: { points: true },
+      }),
+    ]);
+
+    const rewardPoints = rewardAgg._sum.points || 0;
+    const performancePoints = performanceAgg._sum.points || 0;
+    const totalAdded = addedAgg._sum.points || 0;
+    const totalDeducted = Math.abs(deductedAgg._sum.points || 0);
+
+    // Next grade info
+    const gradeThresholds = [
+      { grade: 'F', label: 'F', minPoints: 0 },
+      { grade: 'C', label: 'C', minPoints: 60 },
+      { grade: 'B', label: 'B', minPoints: 75 },
+      { grade: 'A', label: 'A', minPoints: 90 },
+      { grade: 'A_PLUS', label: 'A+', minPoints: 105 },
+    ];
+    const currentIdx = gradeThresholds.findIndex(g => g.grade === user.grade);
+    let nextGradeInfo = null;
+    if (currentIdx >= 0 && currentIdx < gradeThresholds.length - 1) {
+      const next = gradeThresholds[currentIdx + 1];
+      nextGradeInfo = {
+        grade: next.grade,
+        label: next.label,
+        minPoints: next.minPoints,
+        pointsNeeded: Math.max(0, next.minPoints - user.points),
+      };
+    }
+
+    // Policies and reward thresholds for library sections
+    const [policies, rewardThresholds] = await Promise.all([
+      prisma.policy.findMany({
+        where: {
+          OR: [
+            { isGlobal: true },
+            ...(user.departmentId ? [{ departmentId: user.departmentId }] : []),
+          ],
+        },
+        orderBy: { name: 'asc' },
+      }),
+      prisma.rewardThreshold.findMany({
+        where: { departmentId: null },
+        orderBy: { minPoints: 'desc' },
+      }),
+    ]);
+
     res.json({
       points: user.points,
       grade: user.grade,
       gradeInfo,
       department: user.department,
+      rank,
       recentLogs,
       pointsTrend,
       status: gradeInfo.consequence || gradeInfo.reward || 'Good standing',
+      rewardPoints,
+      performancePoints,
+      totalAdded,
+      totalDeducted,
+      nextGradeInfo,
+      policies,
+      rewardThresholds,
     });
   } catch (error) {
     console.error('Member dashboard error:', error);

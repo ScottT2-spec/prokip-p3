@@ -56,4 +56,74 @@ router.get('/me', authenticate, async (req, res) => {
   res.json({ user });
 });
 
+// PUT /api/auth/change-password
+router.put('/change-password', authenticate, [
+  body('currentPassword').notEmpty().withMessage('Current password required'),
+  body('newPassword').isLength({ min: 6 }).withMessage('New password must be at least 6 characters'),
+], async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    // Verify current password
+    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+    const validPassword = await bcrypt.compare(currentPassword, user.password);
+    if (!validPassword) {
+      return res.status(401).json({ error: 'Current password is incorrect.' });
+    }
+
+    // Update password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await prisma.user.update({
+      where: { id: req.user.id },
+      data: { password: hashedPassword },
+    });
+
+    res.json({ message: 'Password updated successfully.' });
+  } catch (error) {
+    console.error('Change password error:', error);
+    res.status(500).json({ error: 'Server error.' });
+  }
+});
+
+// PUT /api/auth/reset-password/:userId (Admin only)
+router.put('/reset-password/:userId', authenticate, [
+  body('newPassword').isLength({ min: 6 }).withMessage('New password must be at least 6 characters'),
+], async (req, res) => {
+  if (req.user.role !== 'ADMIN') {
+    return res.status(403).json({ error: 'Only admins can reset passwords.' });
+  }
+
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
+  try {
+    const user = await prisma.user.findUnique({ where: { id: req.params.userId } });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+
+    const hashedPassword = await bcrypt.hash(req.body.newPassword, 10);
+
+    await prisma.user.update({
+      where: { id: req.params.userId },
+      data: { password: hashedPassword },
+    });
+
+    res.json({
+      message: 'Password reset successfully.',
+      userId: req.params.userId,
+    });
+  } catch (error) {
+    console.error('Reset password error:', error);
+    res.status(500).json({ error: 'Server error.' });
+  }
+});
+
 module.exports = router;

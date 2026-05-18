@@ -30,15 +30,25 @@ model User {
   role         Role     @default(MEMBER)
   points       Int      @default(100)
   grade        Grade    @default(A)
-  departmentId String?
-  department   Department? @relation(fields: [departmentId], references: [id])
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  avatarUrl    String?
+  departmentId   String?
+  department     Department? @relation(fields: [departmentId], references: [id])
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   // Relations
-  pointLogs    PointLog[]    @relation("PointReceiver")
-  pointsGiven  PointLog[]    @relation("PointGiver")
+  pointLogs      PointLog[]      @relation("PointReceiver")
+  pointsGiven    PointLog[]      @relation("PointGiver")
+  notifications  Notification[]
+  tasks          Task[]          @relation("TaskAssignee")
+  tasksAssigned  Task[]          @relation("TaskAssigner")
+  taskActivities TaskActivity[]
 
+  @@index([departmentId])
+  @@index([grade])
+  @@index([points(sort: Desc)])
+  @@index([firstName, lastName])
+  @@index([departmentId, grade])
   @@map("users")
 }
 
@@ -49,8 +59,11 @@ model Department {
   updatedAt DateTime @updatedAt
 
   // Relations
-  users     User[]
-  policies  Policy[]
+  users             User[]
+  policies          Policy[]
+  rewardThresholds  RewardThreshold[]
+  quarterSettings   QuarterSettings[]
+  rewardPolicies    RewardPolicy[]
 
   @@map("departments")
 }
@@ -81,23 +94,133 @@ model PointLog {
   policyId   String?
   policy     Policy?  @relation(fields: [policyId], references: [id])
   points     Int
+  category   PointCategory @default(PERFORMANCE)
   reason     String
   ticketLink String?
+  imageUrl   String?
   createdAt  DateTime @default(now())
 
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([givenById])
+  @@index([createdAt(sort: Desc)])
   @@map("point_logs")
 }
 
 model RewardThreshold {
   id          String @id @default(uuid())
-  grade       Grade  @unique
+  grade       Grade
   minPoints   Int
   maxPoints   Int?
   title       String
   description String
+  reward      String?
   consequence String?
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  @@unique([grade, departmentId])
   @@map("reward_thresholds")
+}
+
+model QuarterSettings {
+  id          String   @id @default(uuid())
+  name        String
+  startDate   DateTime
+  endDate     DateTime
+  isActive    Boolean  @default(true)
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("quarter_settings")
+}
+
+enum RewardType {
+  MONETARY
+  GROWTH
+  FLEXIBILITY
+  RECOGNITION
+  CONSEQUENCE
+}
+
+model RewardPolicy {
+  id           String      @id @default(uuid())
+  grade        Grade
+  title        String
+  description  String
+  type         RewardType  @default(RECOGNITION)
+  isActive     Boolean     @default(true)
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id])
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@index([grade])
+  @@index([departmentId])
+  @@map("reward_policies")
+}
+
+enum PointCategory {
+  PERFORMANCE
+  REWARD
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  type      String   @default("POINT_UPDATE") // POINT_UPDATE, PLATINUM_HIGH_FIVE
+  title     String
+  message   String
+  metadata  Json?    // { points, category, reason, givenBy, newTotal }
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId, read, createdAt(sort: Desc)])
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("notifications")
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  IN_REVIEW
+  DONE
+  CLOSED
+}
+
+model Task {
+  id           String     @id @default(uuid())
+  title        String
+  description  String?
+  taskBoardId  String?    // ID from Prokip's task board for linking
+  status       TaskStatus @default(TODO)
+  dueDate      DateTime?
+  userId       String
+  user         User       @relation("TaskAssignee", fields: [userId], references: [id])
+  assignedById String
+  assignedBy   User       @relation("TaskAssigner", fields: [assignedById], references: [id])
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@index([userId, status])
+  @@index([status])
+  @@map("tasks")
+}
+
+model TaskActivity {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  taskId       String
+  taskTitle    String
+  activityType String   @default("status_update") // status_update, comment, attachment, other
+  createdAt    DateTime @default(now())
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([taskId])
+  @@map("task_activities")
 }

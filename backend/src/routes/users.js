@@ -4,6 +4,7 @@ const { body, query, validationResult } = require('express-validator');
 const prisma = require('../config/db');
 const { authenticate, authorize } = require('../middleware/auth');
 const { calculateGrade } = require('../utils/gradeCalculator');
+const upload = require('../middleware/upload');
 
 const router = express.Router();
 
@@ -35,10 +36,19 @@ router.get('/', authenticate, authorize('ADMIN', 'LEAD'), async (req, res) => {
       where.grade = grade;
     }
 
+    const { sortBy = 'points', sortOrder = 'desc' } = req.query;
+
+    // Determine orderBy based on sortBy param (reward_points sorted client-side)
+    let orderBy = { points: 'desc' };
+    if (sortBy === 'points') {
+      orderBy = { points: sortOrder === 'asc' ? 'asc' : 'desc' };
+    } else if (sortBy === 'firstName') {
+      orderBy = { firstName: sortOrder === 'asc' ? 'asc' : 'desc' };
+    }
+
     const [users, total] = await Promise.all([
       prisma.user.findMany({
         where,
-        include: { department: true },
         select: {
           id: true,
           email: true,
@@ -47,17 +57,48 @@ router.get('/', authenticate, authorize('ADMIN', 'LEAD'), async (req, res) => {
           role: true,
           points: true,
           grade: true,
+          avatarUrl: true,
           department: true,
           createdAt: true,
         },
-        orderBy: { points: 'desc' },
+        orderBy,
         skip: (page - 1) * limit,
         take: parseInt(limit),
       }),
       prisma.user.count({ where }),
     ]);
 
-    res.json({ users, total, page: parseInt(page), limit: parseInt(limit) });
+    // Aggregate reward points (positive points only) for each user
+    const userIds = users.map(u => u.id);
+    let rewardPointsMap = {};
+    if (userIds.length > 0) {
+      const rewardAggregates = await prisma.pointLog.groupBy({
+        by: ['userId'],
+        where: {
+          userId: { in: userIds },
+          points: { gt: 0 },
+        },
+        _sum: { points: true },
+      });
+      rewardPointsMap = Object.fromEntries(
+        rewardAggregates.map(r => [r.userId, r._sum.points || 0])
+      );
+    }
+
+    const usersWithRewards = users.map(u => ({
+      ...u,
+      rewardPoints: rewardPointsMap[u.id] || 0,
+    }));
+
+    // Sort by reward points if requested
+    if (sortBy === 'rewardPoints') {
+      usersWithRewards.sort((a, b) => {
+        const diff = sortOrder === 'asc' ? a.rewardPoints - b.rewardPoints : b.rewardPoints - a.rewardPoints;
+        return diff !== 0 ? diff : b.points - a.points; // tie-break by total points
+      });
+    }
+
+    res.json({ users: usersWithRewards, total, page: parseInt(page), limit: parseInt(limit) });
   } catch (error) {
     console.error('List users error:', error);
     res.status(500).json({ error: 'Server error.' });
@@ -171,6 +212,37 @@ router.put('/:id', authenticate, authorize('ADMIN'), async (req, res) => {
   } catch (error) {
     console.error('Update user error:', error);
     res.status(500).json({ error: 'Server error.' });
+  }
+});
+
+// POST /api/users/avatar - Upload profile picture (authenticated user)
+router.post('/avatar', authenticate, (req, res, next) => {
+  upload.single('avatar')(req, res, (err) => {
+    if (err) {
+      console.error('Multer error:', err.message, err.code);
+      return res.status(400).json({ error: `Upload error: ${err.message}` });
+    }
+    next();
+  });
+}, async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No image file provided.' });
+    }
+
+    const avatarUrl = `/uploads/${req.file.filename}`;
+
+    const user = await prisma.user.update({
+      where: { id: req.user.id },
+      data: { avatarUrl },
+      include: { department: true },
+    });
+
+    const { password: _, ...userWithoutPassword } = user;
+    res.json({ user: userWithoutPassword });
+  } catch (error) {
+    console.error('Avatar upload error:', error.message, error.stack);
+    res.status(500).json({ error: `Failed to upload avatar: ${error.message}` });
   }
 });
 

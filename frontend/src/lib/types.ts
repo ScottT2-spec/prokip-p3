@@ -1,0 +1,179 @@
+import { Grade } from "./grades";
+
+export type Role = "ADMIN" | "LEAD" | "MEMBER";
+
+export interface Department {
+  id: string;
+  name: string;
+  _count?: { users: number };
+  createdAt?: string;
+}
+
+export interface User {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: Role;
+  points: number;
+  grade: Grade;
+  avatarUrl?: string | null;
+  department?: Department | null;
+  departmentId?: string | null;
+  createdAt?: string;
+}
+
+export interface Policy {
+  id: string;
+  name: string;
+  description: string;
+  pointImpact: number;
+  isGlobal: boolean;
+  departmentId?: string | null;
+  department?: Department | null;
+}
+
+export type PointCategory = "PERFORMANCE" | "REWARD";
+
+export interface PointLog {
+  id: string;
+  userId: string;
+  points: number;
+  category?: PointCategory;
+  reason: string;
+  ticketLink?: string | null;
+  imageUrl?: string | null;
+  balanceAfter?: number;
+  createdAt: string;
+  user?: { firstName: string; lastName: string };
+  givenBy?: { firstName: string; lastName: string };
+  policy?: { name: string; description?: string } | null;
+}
+
+export interface RecentActivity extends PointLog {
+  user: { firstName: string; lastName: string };
+  givenBy: { firstName: string; lastName: string };
+}
+
+export interface AdminDashboard {
+  stats: {
+    totalMembers: number;
+    avgPoints: number;
+    atRiskCount: number;
+    topPerformerCount: number;
+  };
+  gradeDistribution: Record<string, number>;
+  rankings: User[];
+  total: number;
+  page: number;
+  limit: number;
+  atRisk: User[];
+  topPerformers: User[];
+  recentActivity: RecentActivity[];
+}
+
+export interface MemberDashboard {
+  points: number;
+  grade: Grade;
+  gradeInfo: {
+    label: string;
+    badge: string;
+    color: string;
+    reward?: string;
+    consequence?: string;
+  };
+  department: Department | null;
+  rank: number | null;
+  recentLogs: PointLog[];
+  pointsTrend: { points: number; createdAt: string }[];
+  status: string;
+}
+
+export interface RewardThreshold {
+  id: string;
+  grade: string;
+  minPoints: number;
+  maxPoints: number | null;
+  title: string;
+  description: string;
+  reward: string | null;
+  consequence: string | null;
+}
+
+export interface EnhancedMemberDashboard extends MemberDashboard {
+  rewardPoints: number;
+  performancePoints: number;
+  totalAdded: number;
+  totalDeducted: number;
+  nextGradeInfo: {
+    grade: string;
+    label: string;
+    minPoints: number;
+    pointsNeeded: number;
+  } | null;
+  policies: Policy[];
+  rewardThresholds: RewardThreshold[];
+}
+
+export interface Notification {
+  id: string;
+  userId: string;
+  type: "POINT_UPDATE" | "PLATINUM_HIGH_FIVE";
+  title: string;
+  message: string;
+  metadata?: {
+    points?: number;
+    category?: PointCategory;
+    reason?: string;
+    newTotal?: number;
+    givenBy?: string;
+  };
+  read: boolean;
+  createdAt: string;
+}
+
+export type RewardPolicyType = "MONETARY" | "GROWTH" | "FLEXIBILITY" | "RECOGNITION" | "CONSEQUENCE";
+
+export interface RewardPolicy {
+  id: string;
+  grade: Grade;
+  title: string;
+  description: string;
+  type: RewardPolicyType;
+  isActive: boolean;
+  departmentId?: string | null;
+  department?: Department | null;
+  createdAt?: string;
+}
+
+export type TaskStatus = "TODO" | "IN_PROGRESS" | "IN_REVIEW" | "DONE" | "CLOSED";
+
+export interface Task {
+  id: string;
+  title: string;
+  description?: string | null;
+  taskBoardId?: string | null;
+  status: TaskStatus;
+  dueDate?: string | null;
+  userId: string;
+  user?: { id: string; firstName: string; lastName: string; department?: { name: string } };
+  assignedBy?: { firstName: string; lastName: string };
+  createdAt: string;
+}
+
+export interface GhostingReport {
+  totalGhosting: number;
+  report: {
+    user: {
+      id: string;
+      name: string;
+      points: number;
+      grade: Grade;
+      department?: string;
+    };
+    activeTasks: { id: string; title: string; taskBoardId?: string; status: string }[];
+    lastActivity: string | null;
+    hoursSinceUpdate: number;
+    pendingPenalty: number;
+  }[];
+}

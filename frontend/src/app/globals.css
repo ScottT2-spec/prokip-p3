@@ -1,0 +1,59 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+@layer base {
+  body {
+    @apply bg-[#F8FAFC] text-prokip-navy font-sans antialiased;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-prokip-navy-dark text-white px-6 py-3 rounded-xl font-semibold text-[15px] transition-all hover:bg-prokip-navy hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0;
+  }
+  .btn-secondary {
+    @apply bg-white text-prokip-navy px-5 py-3 rounded-lg border border-[#E2E8F0] font-semibold flex items-center gap-2 transition-all hover:bg-[#F8FAFC] hover:border-[#CBD5E1];
+  }
+  .btn-danger {
+    @apply bg-red-500 text-white px-5 py-3 rounded-xl font-semibold transition-all hover:bg-red-600 disabled:opacity-50;
+  }
+  .card {
+    @apply bg-white rounded-card p-6 shadow-card border border-[#E2E8F0];
+  }
+  .input-field {
+    @apply bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl px-4 py-3 text-[15px] w-full transition-all focus:border-prokip-navy focus:outline-none focus:ring-[3px] focus:ring-prokip-navy/10;
+  }
+  .input-label {
+    @apply text-xs font-semibold tracking-wider uppercase text-prokip-navy mb-2 block;
+  }
+  .section-label {
+    @apply text-[11px] font-semibold tracking-wider text-[#94A3B8] uppercase;
+  }
+}
+
+/* Grade badge shimmer for platinum */
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+.badge-platinum {
+  background: linear-gradient(110deg, #E5E4E2 0%, #C0C0C0 25%, #E5E4E2 50%, #D4D4D4 75%, #E5E4E2 100%);
+  background-size: 200% 100%;
+  animation: shimmer 3s ease-in-out infinite;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 3px;
+}
